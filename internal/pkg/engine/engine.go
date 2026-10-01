@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
 )
@@ -148,10 +149,29 @@ func evaluateOption(
 	return recOpt
 }
 
-// Export takes a previous record and a new record, and returns a new record that includes the history of the previous record.
-// It computes the SHA256 hash of the model in the new record and appends a history entry to the new record's history.
-func Export(prev *v1.Record, curr *v1.Record) (*v1.Record, error) {
-	panic("unimplemented")
+// Export finalizes the current record. If a previous record is provided (non-nil),
+// its Final decision is moved into the current record's History. Returns a new Record.
+func Export(prev *v1.Record, curr *v1.Record) *v1.Record {
+	out := *curr
+	out.DecidedOn = time.Now().UTC().Format(time.RFC3339)
+
+	if prev != nil {
+		out.History = make([]v1.HistoryEntry, len(prev.History))
+		copy(out.History, prev.History)
+
+		if prev.Final != nil {
+			out.History = append(out.History, v1.HistoryEntry{
+				DecidedOn:   prev.DecidedOn,
+				Present:     prev.Present,
+				Option:      prev.Final.Option,
+				Title:       prev.Final.Title,
+				Rationale:   prev.Final.Rationale,
+				ModelSHA256: prev.ModelSHA256,
+			})
+		}
+	}
+
+	return &out
 }
 
 // computeSHA256 computes the SHA256 hash of the given document and returns it as a hexadecimal string.

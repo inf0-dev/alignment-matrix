@@ -4,6 +4,7 @@ package engine_test
 
 import (
 	"testing"
+	"time"
 
 	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
 	"github.com/inf0-dev/alignment-matrix/internal/pkg/engine"
@@ -12,11 +13,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func assertRecentTimestamp(t *testing.T, value string) {
+	t.Helper()
+	parsed, err := time.Parse(time.RFC3339, value)
+	require.NoError(t, err, "DecidedOn should be valid RFC3339")
+	assert.WithinDuration(t, time.Now().UTC(), parsed, 5*time.Second, "DecidedOn should be within 5s of now")
+}
+
 func baseDocument() *v1.Document {
 	return &v1.Document{
 		Metadata: v1.Metadata{Version: v1.VersionV1},
 		Schema: v1.Schema{
-			Title: "Test",
+			Title:      "Test",
 			Categories: []string{"report", "export"},
 			Requirements: []v1.Requirement{
 				{ID: "hard1", Description: "Hard req", IsHard: true},
@@ -213,10 +221,10 @@ func TestEvaluateFailedRequirements(t *testing.T) {
 
 func TestEvaluateFiredBlocks(t *testing.T) {
 	tests := []struct {
-		name          string
-		items         []v1.RecordItem
-		wantFired     []string
-		wantNotFired  bool
+		name         string
+		items        []v1.RecordItem
+		wantFired    []string
+		wantNotFired bool
 	}{
 		{
 			name: "block fires when all conditions met",
@@ -314,9 +322,9 @@ func TestEvaluateEffectsNotFiredForUnchosenAnswer(t *testing.T) {
 
 func TestEvaluateStillOpen(t *testing.T) {
 	tests := []struct {
-		name      string
-		items     []v1.RecordItem
-		wantOpen  []string
+		name     string
+		items    []v1.RecordItem
+		wantOpen []string
 	}{
 		{
 			name: "all answered",
@@ -351,6 +359,150 @@ func TestEvaluateStillOpen(t *testing.T) {
 			assert.Equal(t, tt.wantOpen, rec.StillOpen)
 		})
 	}
+}
+
+// --- Export tests ---
+
+func TestExportNoPrevious(t *testing.T) {
+	curr := &v1.Record{
+		Version:     v1.RecordVersionV1,
+		ModelSHA256: "hash1",
+		DecidedOn:   "2026-10-01",
+		Present:     []string{"Alice"},
+		Final:       &v1.FinalDecision{Option: "opt1", Title: "Option 1", Rationale: "Best"},
+	}
+
+	out := engine.Export(nil, curr)
+	require.NotNil(t, out)
+	assert.Empty(t, out.History)
+	assert.Equal(t, curr.Final, out.Final)
+	assertRecentTimestamp(t, out.DecidedOn)
+}
+
+func TestExportWithPrevious(t *testing.T) {
+	prev := &v1.Record{
+		Version:     v1.RecordVersionV1,
+		ModelSHA256: "old_hash",
+		DecidedOn:   "2026-09-01",
+		Present:     []string{"Bob"},
+		Final:       &v1.FinalDecision{Option: "opt2", Title: "Option 2", Rationale: "Was best then"},
+	}
+
+	curr := &v1.Record{
+		Version:     v1.RecordVersionV1,
+		ModelSHA256: "new_hash",
+		DecidedOn:   "2026-10-01",
+		Present:     []string{"Alice"},
+		Final:       &v1.FinalDecision{Option: "opt1", Title: "Option 1", Rationale: "Better now"},
+	}
+
+	out := engine.Export(prev, curr)
+	require.NotNil(t, out)
+
+	expectedHistory := []v1.HistoryEntry{
+		{
+			DecidedOn:   "2026-09-01",
+			Present:     []string{"Bob"},
+			Option:      "opt2",
+			Title:       "Option 2",
+			Rationale:   "Was best then",
+			ModelSHA256: "old_hash",
+		},
+	}
+	assert.Equal(t, expectedHistory, out.History)
+	assert.Equal(t, curr.Final, out.Final)
+	assertRecentTimestamp(t, out.DecidedOn)
+}
+
+func TestExportPreservesExistingHistory(t *testing.T) {
+	prev := &v1.Record{
+		Version:     v1.RecordVersionV1,
+		ModelSHA256: "hash2",
+		DecidedOn:   "2026-09-15",
+		Present:     []string{"Charlie"},
+		Final:       &v1.FinalDecision{Option: "opt2", Title: "Option 2", Rationale: "Second pick"},
+		History: []v1.HistoryEntry{
+			{
+				DecidedOn:   "2026-08-01",
+				Present:     []string{"Dave"},
+				Option:      "opt3",
+				Title:       "Option 3",
+				Rationale:   "First pick",
+				ModelSHA256: "hash1",
+			},
+		},
+	}
+
+	curr := &v1.Record{
+		Version:     v1.RecordVersionV1,
+		ModelSHA256: "hash3",
+		DecidedOn:   "2026-10-01",
+		Final:       &v1.FinalDecision{Option: "opt1", Title: "Option 1", Rationale: "Third pick"},
+	}
+
+	out := engine.Export(prev, curr)
+
+	expectedHistory := []v1.HistoryEntry{
+		{
+			DecidedOn:   "2026-08-01",
+			Present:     []string{"Dave"},
+			Option:      "opt3",
+			Title:       "Option 3",
+			Rationale:   "First pick",
+			ModelSHA256: "hash1",
+		},
+		{
+			DecidedOn:   "2026-09-15",
+			Present:     []string{"Charlie"},
+			Option:      "opt2",
+			Title:       "Option 2",
+			Rationale:   "Second pick",
+			ModelSHA256: "hash2",
+		},
+	}
+	assert.Equal(t, expectedHistory, out.History)
+}
+
+func TestExportPreviousWithNoFinal(t *testing.T) {
+	prev := &v1.Record{
+		Version:     v1.RecordVersionV1,
+		ModelSHA256: "old_hash",
+		DecidedOn:   "2026-09-01",
+		Final:       nil, // no decision was made
+	}
+
+	curr := &v1.Record{
+		Version:     v1.RecordVersionV1,
+		ModelSHA256: "new_hash",
+		DecidedOn:   "2026-10-01",
+		Final:       &v1.FinalDecision{Option: "opt1", Title: "Option 1"},
+	}
+
+	out := engine.Export(prev, curr)
+	assert.Empty(t, out.History) // nothing to move
+}
+
+func TestExportDoesNotMutatePrevOrCurr(t *testing.T) {
+	prev := &v1.Record{
+		Version:     v1.RecordVersionV1,
+		ModelSHA256: "old_hash",
+		DecidedOn:   "2026-09-01",
+		Final:       &v1.FinalDecision{Option: "opt2", Title: "Option 2"},
+		History:     []v1.HistoryEntry{},
+	}
+
+	curr := &v1.Record{
+		Version:     v1.RecordVersionV1,
+		ModelSHA256: "new_hash",
+		DecidedOn:   "2026-10-01",
+		Final:       &v1.FinalDecision{Option: "opt1", Title: "Option 1"},
+	}
+
+	_ = engine.Export(prev, curr)
+
+	// prev and curr should be unchanged
+	assert.Empty(t, prev.History)
+	assert.Nil(t, curr.History)
 }
 
 func TestEvaluateModelSHA256Consistent(t *testing.T) {
