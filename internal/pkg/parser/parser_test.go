@@ -8,6 +8,7 @@ import (
 
 	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
 	"github.com/inf0-dev/alignment-matrix/internal/pkg/parser"
+	"github.com/inf0-dev/alignment-matrix/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,8 +16,6 @@ import (
 func testdataPath(name string) string {
 	return filepath.Join("testdata", name)
 }
-
-func strPtr(v string) *string { return &v }
 
 var expectedDocument = v1.Document{
 	Metadata: v1.Metadata{
@@ -59,7 +58,7 @@ var expectedRecord = v1.Record{
 		{ID: "req1", IsHard: true, Checked: true},
 	},
 	Items: []v1.RecordItem{
-		{ID: "q1", Kind: v1.KindChoice, Answer: strPtr("yes")},
+		{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
 	},
 	Options: []v1.RecordOption{},
 	Final: &v1.FinalDecision{

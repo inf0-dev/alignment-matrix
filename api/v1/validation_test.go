@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
+	"github.com/inf0-dev/alignment-matrix/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,8 +46,6 @@ func validDocument() v1.Document {
 	}
 }
 
-func intPtr(v int) *int    { return &v }
-func strPtr(v string) *string { return &v }
 
 func TestValidDocument(t *testing.T) {
 	doc := validDocument()
@@ -266,7 +265,7 @@ func TestValidateItems(t *testing.T) {
 					ID:           "n1",
 					Kind:         v1.KindNumber,
 					Description:  "A number",
-					NumberConfig: &v1.NumberConfig{Min: intPtr(10), Max: intPtr(5)},
+					NumberConfig: &v1.NumberConfig{Min: testutil.IntPtr(10), Max: testutil.IntPtr(5)},
 				})
 			},
 			wantErr: "has min greater than max",
@@ -278,7 +277,7 @@ func TestValidateItems(t *testing.T) {
 					ID:           "n1",
 					Kind:         v1.KindNumber,
 					Description:  "A number",
-					NumberConfig: &v1.NumberConfig{Unit: "months", Min: intPtr(1), Max: intPtr(12)},
+					NumberConfig: &v1.NumberConfig{Unit: "months", Min: testutil.IntPtr(1), Max: testutil.IntPtr(12)},
 				})
 			},
 			wantErr: "",
@@ -568,7 +567,7 @@ func validRecord() v1.Record {
 			{ID: "req1", IsHard: true, Checked: true},
 		},
 		Items: []v1.RecordItem{
-			{ID: "q1", Kind: v1.KindChoice, Answer: strPtr("yes")},
+			{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
 		},
 		Options: []v1.RecordOption{},
 		Final: &v1.FinalDecision{
@@ -702,7 +701,7 @@ func TestValidateRecordItems(t *testing.T) {
 			name: "unknown choice answer",
 			modify: func(r *v1.Record) {
 				r.Items = []v1.RecordItem{
-					{ID: "q1", Kind: v1.KindChoice, Answer: strPtr("maybe")},
+					{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("maybe")},
 				}
 			},
 			wantErr: "unknown answer: maybe",

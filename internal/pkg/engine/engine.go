@@ -1,0 +1,164 @@
+package engine
+
+import (
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
+)
+
+// Evaluate computes derived fields (option statuses, meets counts, fired blocks/effects, still_open)
+// from a document and the current session state (requirements checked, items answered).
+func Evaluate(doc *v1.Document, requirements []v1.RecordRequirement, items []v1.RecordItem) (*v1.Record, error) {
+	hash, err := computeSHA256(doc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute SHA256: %w", err)
+	}
+
+	checkedReqs := make(map[string]bool)
+	for _, r := range requirements {
+		checkedReqs[r.ID] = r.Checked
+	}
+
+	hardReqs := make(map[string]bool)
+	for _, r := range doc.Schema.Requirements {
+		hardReqs[r.ID] = r.IsHard
+	}
+
+	activeAnswerKeys := make(map[string]struct{})
+	for _, item := range items {
+		if item.Kind == v1.KindChoice && item.Answer != nil {
+			activeAnswerKeys[item.ID+"."+*item.Answer] = struct{}{}
+		}
+	}
+
+	// Evaluate each design option
+	options := make([]v1.RecordOption, 0, len(doc.Schema.DesignOptions))
+	for _, opt := range doc.Schema.DesignOptions {
+		recOpt := evaluateOption(opt, checkedReqs, hardReqs, activeAnswerKeys)
+		options = append(options, recOpt)
+	}
+
+	// Compute still_open: choice items with no answer
+	var stillOpen []string
+	for _, item := range items {
+		if item.Kind == v1.KindChoice && item.Answer == nil {
+			stillOpen = append(stillOpen, item.ID)
+		}
+	}
+
+	return &v1.Record{
+		Version:      v1.RecordVersionV1,
+		Model:        *doc,
+		ModelSHA256:  hash,
+		Requirements: requirements,
+		Items:        items,
+		Options:      options,
+		StillOpen:    stillOpen,
+	}, nil
+}
+
+func evaluateOption(
+	opt v1.DesignOption,
+	checkedReqs map[string]bool,
+	hardReqs map[string]bool,
+	activeAnswerKeys map[string]struct{},
+) v1.RecordOption {
+	recOpt := v1.RecordOption{ID: opt.ID}
+
+	// Compute meets counts and failed requirements
+	var hardMet, hardOf, softMet, softOf int
+	var failedReqs []string
+
+	for reqID, status := range opt.RequirementsMet {
+		isHard := hardReqs[reqID]
+		checked := checkedReqs[reqID]
+
+		if isHard {
+			hardOf++
+			if status.Met || status.Partial {
+				hardMet++
+			} else if checked {
+				failedReqs = append(failedReqs, reqID)
+			}
+		} else {
+			softOf++
+			if status.Met || status.Partial {
+				softMet++
+			}
+		}
+	}
+
+	recOpt.Meets.Hard = v1.MeetsCounts{Met: hardMet, Of: hardOf}
+	recOpt.Meets.Soft = v1.MeetsCounts{Met: softMet, Of: softOf}
+	if failedReqs == nil {
+		failedReqs = []string{}
+	}
+	recOpt.FailedRequirements = failedReqs
+
+	// Check blocks: AND within a block, OR across blocks
+	var firedBlocks []string
+	for _, block := range opt.Blocks {
+		allMatch := true
+		for _, key := range block.Condition {
+			if _, active := activeAnswerKeys[key]; !active {
+				allMatch = false
+				break
+			}
+		}
+		if allMatch {
+			firedBlocks = append(firedBlocks, block.Reason)
+		}
+	}
+	if firedBlocks == nil {
+		firedBlocks = []string{}
+	}
+	recOpt.FiredBlocks = firedBlocks
+
+	// Collect fired effects for chosen answers
+	var effects []v1.FiredEffect
+	for key, effs := range opt.Effects {
+		if _, active := activeAnswerKeys[key]; !active {
+			continue
+		}
+		parts := strings.SplitN(key, ".", 2)
+		for _, eff := range effs {
+			effects = append(effects, v1.FiredEffect{
+				Item:     parts[0],
+				Answer:   parts[1],
+				Kind:     eff.Kind,
+				Category: eff.Category,
+				Text:     eff.Text,
+			})
+		}
+	}
+	recOpt.Effects = effects
+
+	// Determine status: muted > blocked > possible
+	if len(failedReqs) > 0 {
+		recOpt.Status = v1.StatusMuted
+	} else if len(firedBlocks) > 0 {
+		recOpt.Status = v1.StatusBlocked
+	} else {
+		recOpt.Status = v1.StatusPossible
+	}
+
+	return recOpt
+}
+
+// Export takes a previous record and a new record, and returns a new record that includes the history of the previous record.
+// It computes the SHA256 hash of the model in the new record and appends a history entry to the new record's history.
+func Export(prev *v1.Record, curr *v1.Record) (*v1.Record, error) {
+	panic("unimplemented")
+}
+
+// computeSHA256 computes the SHA256 hash of the given document and returns it as a hexadecimal string.
+func computeSHA256(doc *v1.Document) (string, error) {
+	docBytes, err := json.Marshal(doc)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", sha256.Sum256(docBytes)), nil
+}

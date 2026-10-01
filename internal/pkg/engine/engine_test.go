@@ -1,0 +1,371 @@
+//go:build unit
+
+package engine_test
+
+import (
+	"testing"
+
+	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
+	"github.com/inf0-dev/alignment-matrix/internal/pkg/engine"
+	"github.com/inf0-dev/alignment-matrix/internal/testutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func baseDocument() *v1.Document {
+	return &v1.Document{
+		Metadata: v1.Metadata{Version: v1.VersionV1},
+		Schema: v1.Schema{
+			Title: "Test",
+			Categories: []string{"report", "export"},
+			Requirements: []v1.Requirement{
+				{ID: "hard1", Description: "Hard req", IsHard: true},
+				{ID: "soft1", Description: "Soft req", IsHard: false},
+			},
+			Items: []v1.Item{
+				{
+					ID: "q1", Kind: v1.KindChoice, Description: "Q1",
+					ChoiceOptions: []v1.ChoiceOption{
+						{ID: "yes", Description: "Yes"},
+						{ID: "no", Description: "No"},
+					},
+				},
+				{
+					ID: "q2", Kind: v1.KindChoice, Description: "Q2",
+					ChoiceOptions: []v1.ChoiceOption{
+						{ID: "a", Description: "A"},
+						{ID: "b", Description: "B"},
+					},
+				},
+			},
+			DesignOptions: []v1.DesignOption{
+				{
+					ID:    "opt1",
+					Title: "Option 1",
+					RequirementsMet: v1.RequirementsMet{
+						"hard1": {Met: true},
+						"soft1": {Met: true},
+					},
+					Effects: map[string][]v1.Effect{
+						"q1.yes": {{Kind: v1.EffectChanges, Category: "report", Text: "Rows visible"}},
+						"q1.no":  {{Kind: v1.EffectNote, Category: "export", Text: "No export change"}},
+					},
+				},
+				{
+					ID:    "opt2",
+					Title: "Option 2",
+					RequirementsMet: v1.RequirementsMet{
+						"hard1": {Met: false},
+						"soft1": {Met: true},
+					},
+				},
+				{
+					ID:    "opt3",
+					Title: "Option 3",
+					RequirementsMet: v1.RequirementsMet{
+						"hard1": {Met: true},
+						"soft1": {Partial: true, Reason: "partially"},
+					},
+					Blocks: []v1.Block{
+						{Condition: []string{"q1.yes", "q2.a"}, Reason: "Combo breaks it"},
+					},
+				},
+			},
+		},
+	}
+}
+
+func baseRequirements() []v1.RecordRequirement {
+	return []v1.RecordRequirement{
+		{ID: "hard1", IsHard: true, Checked: true},
+		{ID: "soft1", IsHard: false, Checked: true},
+	}
+}
+
+func TestEvaluateReturnsRecord(t *testing.T) {
+	doc := baseDocument()
+	items := []v1.RecordItem{
+		{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+		{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
+	}
+
+	rec, err := engine.Evaluate(doc, baseRequirements(), items)
+	require.NoError(t, err)
+	require.NotNil(t, rec)
+	assert.Equal(t, v1.RecordVersionV1, rec.Version)
+	assert.NotEmpty(t, rec.ModelSHA256)
+	assert.Equal(t, *doc, rec.Model)
+	assert.Nil(t, rec.Final)
+	assert.Empty(t, rec.DecidedOn)
+}
+
+func TestEvaluateOptionStatus(t *testing.T) {
+	tests := []struct {
+		name       string
+		items      []v1.RecordItem
+		reqs       []v1.RecordRequirement
+		wantStatus map[string]v1.OptionStatus
+	}{
+		{
+			name: "all answered, hard req checked — opt2 muted, opt3 blocked",
+			items: []v1.RecordItem{
+				{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+				{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
+			},
+			reqs: baseRequirements(),
+			wantStatus: map[string]v1.OptionStatus{
+				"opt1": v1.StatusPossible,
+				"opt2": v1.StatusMuted,
+				"opt3": v1.StatusBlocked,
+			},
+		},
+		{
+			name: "block does not fire when not all conditions met",
+			items: []v1.RecordItem{
+				{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+				{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("b")},
+			},
+			reqs: baseRequirements(),
+			wantStatus: map[string]v1.OptionStatus{
+				"opt1": v1.StatusPossible,
+				"opt2": v1.StatusMuted,
+				"opt3": v1.StatusPossible,
+			},
+		},
+		{
+			name: "unchecked hard req does not mute",
+			items: []v1.RecordItem{
+				{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("no")},
+				{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
+			},
+			reqs: []v1.RecordRequirement{
+				{ID: "hard1", IsHard: true, Checked: false},
+				{ID: "soft1", IsHard: false, Checked: true},
+			},
+			wantStatus: map[string]v1.OptionStatus{
+				"opt1": v1.StatusPossible,
+				"opt2": v1.StatusPossible,
+				"opt3": v1.StatusPossible,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec, err := engine.Evaluate(baseDocument(), tt.reqs, tt.items)
+			require.NoError(t, err)
+			require.Len(t, rec.Options, 3)
+
+			for _, opt := range rec.Options {
+				expected, ok := tt.wantStatus[opt.ID]
+				require.True(t, ok, "unexpected option ID: %s", opt.ID)
+				assert.Equal(t, expected, opt.Status, "option %s", opt.ID)
+			}
+		})
+	}
+}
+
+func TestEvaluateMeetsCounts(t *testing.T) {
+	items := []v1.RecordItem{
+		{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+		{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
+	}
+
+	rec, err := engine.Evaluate(baseDocument(), baseRequirements(), items)
+	require.NoError(t, err)
+
+	optByID := make(map[string]v1.RecordOption)
+	for _, o := range rec.Options {
+		optByID[o.ID] = o
+	}
+
+	// opt1: meets both hard and soft
+	assert.Equal(t, v1.MeetsCounts{Met: 1, Of: 1}, optByID["opt1"].Meets.Hard)
+	assert.Equal(t, v1.MeetsCounts{Met: 1, Of: 1}, optByID["opt1"].Meets.Soft)
+
+	// opt2: fails hard, meets soft
+	assert.Equal(t, v1.MeetsCounts{Met: 0, Of: 1}, optByID["opt2"].Meets.Hard)
+	assert.Equal(t, v1.MeetsCounts{Met: 1, Of: 1}, optByID["opt2"].Meets.Soft)
+
+	// opt3: meets hard, partial soft counts as met
+	assert.Equal(t, v1.MeetsCounts{Met: 1, Of: 1}, optByID["opt3"].Meets.Hard)
+	assert.Equal(t, v1.MeetsCounts{Met: 1, Of: 1}, optByID["opt3"].Meets.Soft)
+}
+
+func TestEvaluateFailedRequirements(t *testing.T) {
+	items := []v1.RecordItem{
+		{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+		{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
+	}
+
+	rec, err := engine.Evaluate(baseDocument(), baseRequirements(), items)
+	require.NoError(t, err)
+
+	optByID := make(map[string]v1.RecordOption)
+	for _, o := range rec.Options {
+		optByID[o.ID] = o
+	}
+
+	assert.Empty(t, optByID["opt1"].FailedRequirements)
+	assert.Equal(t, []string{"hard1"}, optByID["opt2"].FailedRequirements)
+	assert.Empty(t, optByID["opt3"].FailedRequirements)
+}
+
+func TestEvaluateFiredBlocks(t *testing.T) {
+	tests := []struct {
+		name          string
+		items         []v1.RecordItem
+		wantFired     []string
+		wantNotFired  bool
+	}{
+		{
+			name: "block fires when all conditions met",
+			items: []v1.RecordItem{
+				{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+				{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
+			},
+			wantFired: []string{"Combo breaks it"},
+		},
+		{
+			name: "block does not fire when partial conditions",
+			items: []v1.RecordItem{
+				{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+				{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("b")},
+			},
+			wantNotFired: true,
+		},
+		{
+			name: "block does not fire when no answers",
+			items: []v1.RecordItem{
+				{ID: "q1", Kind: v1.KindChoice},
+				{ID: "q2", Kind: v1.KindChoice},
+			},
+			wantNotFired: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec, err := engine.Evaluate(baseDocument(), baseRequirements(), tt.items)
+			require.NoError(t, err)
+
+			optByID := make(map[string]v1.RecordOption)
+			for _, o := range rec.Options {
+				optByID[o.ID] = o
+			}
+
+			opt3 := optByID["opt3"]
+			if tt.wantNotFired {
+				assert.Empty(t, opt3.FiredBlocks)
+			} else {
+				assert.Equal(t, tt.wantFired, opt3.FiredBlocks)
+			}
+		})
+	}
+}
+
+func TestEvaluateFiredEffects(t *testing.T) {
+	items := []v1.RecordItem{
+		{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+		{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
+	}
+
+	rec, err := engine.Evaluate(baseDocument(), baseRequirements(), items)
+	require.NoError(t, err)
+
+	optByID := make(map[string]v1.RecordOption)
+	for _, o := range rec.Options {
+		optByID[o.ID] = o
+	}
+
+	// opt1 has effects for q1.yes — should fire
+	opt1Effects := optByID["opt1"].Effects
+	require.Len(t, opt1Effects, 1)
+	assert.Equal(t, "q1", opt1Effects[0].Item)
+	assert.Equal(t, "yes", opt1Effects[0].Answer)
+	assert.Equal(t, v1.EffectChanges, opt1Effects[0].Kind)
+	assert.Equal(t, "report", opt1Effects[0].Category)
+	assert.Equal(t, "Rows visible", opt1Effects[0].Text)
+
+	// opt2 has no effects defined
+	assert.Empty(t, optByID["opt2"].Effects)
+}
+
+func TestEvaluateEffectsNotFiredForUnchosenAnswer(t *testing.T) {
+	items := []v1.RecordItem{
+		{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("no")},
+		{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
+	}
+
+	rec, err := engine.Evaluate(baseDocument(), baseRequirements(), items)
+	require.NoError(t, err)
+
+	optByID := make(map[string]v1.RecordOption)
+	for _, o := range rec.Options {
+		optByID[o.ID] = o
+	}
+
+	// q1.yes effects should NOT fire, q1.no effects should fire
+	opt1Effects := optByID["opt1"].Effects
+	require.Len(t, opt1Effects, 1)
+	assert.Equal(t, "no", opt1Effects[0].Answer)
+	assert.Equal(t, v1.EffectNote, opt1Effects[0].Kind)
+}
+
+func TestEvaluateStillOpen(t *testing.T) {
+	tests := []struct {
+		name      string
+		items     []v1.RecordItem
+		wantOpen  []string
+	}{
+		{
+			name: "all answered",
+			items: []v1.RecordItem{
+				{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+				{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
+			},
+			wantOpen: nil,
+		},
+		{
+			name: "one unanswered",
+			items: []v1.RecordItem{
+				{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+				{ID: "q2", Kind: v1.KindChoice},
+			},
+			wantOpen: []string{"q2"},
+		},
+		{
+			name: "all unanswered",
+			items: []v1.RecordItem{
+				{ID: "q1", Kind: v1.KindChoice},
+				{ID: "q2", Kind: v1.KindChoice},
+			},
+			wantOpen: []string{"q1", "q2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec, err := engine.Evaluate(baseDocument(), baseRequirements(), tt.items)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantOpen, rec.StillOpen)
+		})
+	}
+}
+
+func TestEvaluateModelSHA256Consistent(t *testing.T) {
+	doc := baseDocument()
+	items := []v1.RecordItem{
+		{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
+		{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
+	}
+
+	rec1, err := engine.Evaluate(doc, baseRequirements(), items)
+	require.NoError(t, err)
+
+	rec2, err := engine.Evaluate(doc, baseRequirements(), items)
+	require.NoError(t, err)
+
+	assert.Equal(t, rec1.ModelSHA256, rec2.ModelSHA256)
+	assert.NotEmpty(t, rec1.ModelSHA256)
+}
