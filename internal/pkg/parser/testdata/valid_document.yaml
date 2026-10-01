@@ -1,0 +1,23 @@
+metadata:
+  version: "alignment-matrix/v1"
+schema:
+  title: "Test Schema"
+  requirements:
+    - id: req1
+      description: "First requirement"
+      is_hard: true
+  items:
+    - id: q1
+      description: "Question 1"
+      kind: choice
+      choice_options:
+        - id: "yes"
+          description: "Yes"
+        - id: "no"
+          description: "No"
+  design_options:
+    - id: opt1
+      title: "Option 1"
+      requirements_met:
+        req1:
+          met: true

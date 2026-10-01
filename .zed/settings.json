@@ -2,7 +2,7 @@
   "lsp": {
     "gopls": {
       "initialization_options": {
-        "buildFlags": ["-tags=unit"],
+        "buildFlags": ["-tags=unit,integration"],
       },
     },
   },

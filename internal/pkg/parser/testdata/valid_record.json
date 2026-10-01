@@ -1,0 +1,48 @@
+{
+  "version": "alignment-matrix/record/v1",
+  "model": {
+    "metadata": {
+      "version": "alignment-matrix/v1"
+    },
+    "schema": {
+      "title": "Test Schema",
+      "requirements": [
+        {"id": "req1", "description": "First requirement", "is_hard": true}
+      ],
+      "items": [
+        {
+          "id": "q1",
+          "description": "Question 1",
+          "kind": "choice",
+          "choice_options": [
+            {"id": "yes", "description": "Yes"},
+            {"id": "no", "description": "No"}
+          ]
+        }
+      ],
+      "design_options": [
+        {
+          "id": "opt1",
+          "title": "Option 1",
+          "requirements_met": {
+            "req1": {"met": true}
+          }
+        }
+      ]
+    }
+  },
+  "model_sha256": "abc123",
+  "decided_on": "2026-10-01",
+  "requirements": [
+    {"id": "req1", "is_hard": true, "checked": true}
+  ],
+  "items": [
+    {"id": "q1", "kind": "choice", "answer": "yes"}
+  ],
+  "options": [],
+  "final": {
+    "option": "opt1",
+    "title": "Option 1",
+    "rationale": "Best fit"
+  }
+}
