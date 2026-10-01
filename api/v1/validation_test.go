@@ -46,7 +46,6 @@ func validDocument() v1.Document {
 	}
 }
 
-
 func TestValidDocument(t *testing.T) {
 	doc := validDocument()
 	require.NoError(t, doc.Validate())

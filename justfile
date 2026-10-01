@@ -24,3 +24,9 @@ test_coverage:
     @ go tool gocovmerge {{ cov_dir }}/unit.out {{ cov_dir }}/integration.out > {{ cov_dir }}/merged.out
     @ echo "--- merged coverage ---"
     @ go tool cover -func={{ cov_dir }}/merged.out | grep total
+
+lint:
+    @ golangci-lint run --timeout 5m
+
+fmt:
+    @ go fmt ./...
