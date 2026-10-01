@@ -172,6 +172,123 @@ func (s *Document) Validate() error {
 		}
 	}
 
+	return formatErrors(errs)
+}
+
+// Validate checks the validity of the record and returns all validation errors found.
+// Derived fields (Options, StillOpen) are not validated as they are recomputed on import.
+func (r *Record) Validate() error {
+	var errs []error
+
+	if r.Version != RecordVersionV1 {
+		errs = append(errs, fmt.Errorf("invalid record version: expected %s, got %s", RecordVersionV1, r.Version))
+	}
+
+	// Validate the embedded model
+	if err := r.Model.Validate(); err != nil {
+		errs = append(errs, fmt.Errorf("embedded model: %w", err))
+	}
+
+	if r.ModelSHA256 == "" {
+		errs = append(errs, fmt.Errorf("model_sha256 is required"))
+	}
+
+	if r.DecidedOn == "" {
+		errs = append(errs, fmt.Errorf("decided_on is required"))
+	}
+
+	// Build lookup sets from the embedded model
+	modelReqIDs := make(map[string]struct{})
+	for _, req := range r.Model.Schema.Requirements {
+		modelReqIDs[req.ID] = struct{}{}
+	}
+
+	modelItemIDs := make(map[string]Kind)
+	choiceAnswerIDs := make(map[string]map[string]struct{})
+	for _, item := range r.Model.Schema.Items {
+		modelItemIDs[item.ID] = item.Kind
+		if item.Kind == KindChoice {
+			answers := make(map[string]struct{})
+			for _, co := range item.ChoiceOptions {
+				answers[co.ID] = struct{}{}
+			}
+			choiceAnswerIDs[item.ID] = answers
+		}
+	}
+
+	modelOptionIDs := make(map[string]struct{})
+	for _, opt := range r.Model.Schema.DesignOptions {
+		modelOptionIDs[opt.ID] = struct{}{}
+	}
+
+	// Validate requirements match the model
+	recordReqIDs := make(map[string]struct{})
+	for i, req := range r.Requirements {
+		if _, exists := modelReqIDs[req.ID]; !exists {
+			errs = append(errs, fmt.Errorf("record requirement[%d] references unknown requirement: %s", i, req.ID))
+		}
+		recordReqIDs[req.ID] = struct{}{}
+	}
+	for reqID := range modelReqIDs {
+		if _, exists := recordReqIDs[reqID]; !exists {
+			errs = append(errs, fmt.Errorf("record is missing requirement: %s", reqID))
+		}
+	}
+
+	// Validate items match the model
+	recordItemIDs := make(map[string]struct{})
+	for i, item := range r.Items {
+		modelKind, exists := modelItemIDs[item.ID]
+		if !exists {
+			errs = append(errs, fmt.Errorf("record item[%d] references unknown item: %s", i, item.ID))
+			continue
+		}
+		recordItemIDs[item.ID] = struct{}{}
+
+		if item.Kind != modelKind {
+			errs = append(errs, fmt.Errorf("record item %s has kind %s, model has %s", item.ID, item.Kind, modelKind))
+		}
+
+		// Validate choice answers reference valid options
+		if item.Answer != nil && modelKind == KindChoice {
+			if answers, ok := choiceAnswerIDs[item.ID]; ok {
+				if _, valid := answers[*item.Answer]; !valid {
+					errs = append(errs, fmt.Errorf("record item %s has unknown answer: %s", item.ID, *item.Answer))
+				}
+			}
+		}
+	}
+	for itemID := range modelItemIDs {
+		if _, exists := recordItemIDs[itemID]; !exists {
+			errs = append(errs, fmt.Errorf("record is missing item: %s", itemID))
+		}
+	}
+
+	// Validate final decision references a real option
+	if r.Final != nil {
+		if _, exists := modelOptionIDs[r.Final.Option]; !exists {
+			errs = append(errs, fmt.Errorf("final decision references unknown option: %s", r.Final.Option))
+		}
+	}
+
+	// Validate history entries
+	for i, entry := range r.History {
+		if entry.DecidedOn == "" {
+			errs = append(errs, fmt.Errorf("history[%d] is missing decided_on", i))
+		}
+		if entry.Option == "" {
+			errs = append(errs, fmt.Errorf("history[%d] is missing option", i))
+		}
+		if entry.ModelSHA256 == "" {
+			errs = append(errs, fmt.Errorf("history[%d] is missing model_sha256", i))
+		}
+	}
+
+	return formatErrors(errs)
+}
+
+// formatErrors returns nil if no errors, or a numbered error list.
+func formatErrors(errs []error) error {
 	if len(errs) == 0 {
 		return nil
 	}

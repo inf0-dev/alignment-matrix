@@ -1,7 +1,5 @@
 package v1
 
-// TODO: Add schema validation
-
 // VersionV1 is the version string for the v1 schema.
 const VersionV1 = "alignment-matrix/v1"
 

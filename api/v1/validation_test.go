@@ -45,7 +45,8 @@ func validDocument() v1.Document {
 	}
 }
 
-func intPtr(v int) *int { return &v }
+func intPtr(v int) *int    { return &v }
+func strPtr(v string) *string { return &v }
 
 func TestValidDocument(t *testing.T) {
 	doc := validDocument()
@@ -551,4 +552,299 @@ func TestValidateGathersMultipleErrors(t *testing.T) {
 	assert.Contains(t, err.Error(), "schema title is required")
 	assert.Contains(t, err.Error(), "at least one design option is required")
 	assert.Contains(t, err.Error(), "3 errors")
+}
+
+// --- Record validation tests ---
+
+// validRecord returns a minimal valid Record for use as a base in tests.
+func validRecord() v1.Record {
+	return v1.Record{
+		Version:     v1.RecordVersionV1,
+		Model:       validDocument(),
+		ModelSHA256: "abc123def456",
+		DecidedOn:   "2026-10-01",
+		Present:     []string{"Alice"},
+		Requirements: []v1.RecordRequirement{
+			{ID: "req1", IsHard: true, Checked: true},
+		},
+		Items: []v1.RecordItem{
+			{ID: "q1", Kind: v1.KindChoice, Answer: strPtr("yes")},
+		},
+		Options: []v1.RecordOption{},
+		Final: &v1.FinalDecision{
+			Option:    "opt1",
+			Title:     "Option 1",
+			Rationale: "Best fit",
+		},
+	}
+}
+
+func TestValidRecord(t *testing.T) {
+	rec := validRecord()
+	require.NoError(t, rec.Validate())
+}
+
+func TestValidateRecordMetadata(t *testing.T) {
+	tests := []struct {
+		name    string
+		modify  func(*v1.Record)
+		wantErr string
+	}{
+		{
+			name: "invalid record version",
+			modify: func(r *v1.Record) {
+				r.Version = "wrong"
+			},
+			wantErr: "invalid record version",
+		},
+		{
+			name: "missing model_sha256",
+			modify: func(r *v1.Record) {
+				r.ModelSHA256 = ""
+			},
+			wantErr: "model_sha256 is required",
+		},
+		{
+			name: "missing decided_on",
+			modify: func(r *v1.Record) {
+				r.DecidedOn = ""
+			},
+			wantErr: "decided_on is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := validRecord()
+			tt.modify(&rec)
+			err := rec.Validate()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
+func TestValidateRecordEmbeddedModel(t *testing.T) {
+	rec := validRecord()
+	rec.Model.Metadata.Version = "bad"
+	err := rec.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "embedded model")
+}
+
+func TestValidateRecordRequirements(t *testing.T) {
+	tests := []struct {
+		name    string
+		modify  func(*v1.Record)
+		wantErr string
+	}{
+		{
+			name: "unknown requirement ID",
+			modify: func(r *v1.Record) {
+				r.Requirements = []v1.RecordRequirement{
+					{ID: "ghost", IsHard: true, Checked: true},
+				}
+			},
+			wantErr: "unknown requirement: ghost",
+		},
+		{
+			name: "missing requirement",
+			modify: func(r *v1.Record) {
+				r.Requirements = []v1.RecordRequirement{}
+			},
+			wantErr: "missing requirement: req1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := validRecord()
+			tt.modify(&rec)
+			err := rec.Validate()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
+func TestValidateRecordItems(t *testing.T) {
+	tests := []struct {
+		name    string
+		modify  func(*v1.Record)
+		wantErr string
+	}{
+		{
+			name: "unknown item ID",
+			modify: func(r *v1.Record) {
+				r.Items = []v1.RecordItem{
+					{ID: "ghost", Kind: v1.KindText},
+				}
+			},
+			wantErr: "unknown item: ghost",
+		},
+		{
+			name: "missing item",
+			modify: func(r *v1.Record) {
+				r.Items = []v1.RecordItem{}
+			},
+			wantErr: "missing item: q1",
+		},
+		{
+			name: "kind mismatch",
+			modify: func(r *v1.Record) {
+				r.Items = []v1.RecordItem{
+					{ID: "q1", Kind: v1.KindText},
+				}
+			},
+			wantErr: "has kind text, model has choice",
+		},
+		{
+			name: "unknown choice answer",
+			modify: func(r *v1.Record) {
+				r.Items = []v1.RecordItem{
+					{ID: "q1", Kind: v1.KindChoice, Answer: strPtr("maybe")},
+				}
+			},
+			wantErr: "unknown answer: maybe",
+		},
+		{
+			name: "valid nil answer",
+			modify: func(r *v1.Record) {
+				r.Items = []v1.RecordItem{
+					{ID: "q1", Kind: v1.KindChoice, Answer: nil},
+				}
+			},
+			wantErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := validRecord()
+			tt.modify(&rec)
+			err := rec.Validate()
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateRecordFinalDecision(t *testing.T) {
+	tests := []struct {
+		name    string
+		modify  func(*v1.Record)
+		wantErr string
+	}{
+		{
+			name: "unknown final option",
+			modify: func(r *v1.Record) {
+				r.Final = &v1.FinalDecision{Option: "ghost", Title: "Ghost"}
+			},
+			wantErr: "unknown option: ghost",
+		},
+		{
+			name: "nil final is valid",
+			modify: func(r *v1.Record) {
+				r.Final = nil
+			},
+			wantErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := validRecord()
+			tt.modify(&rec)
+			err := rec.Validate()
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateRecordHistory(t *testing.T) {
+	tests := []struct {
+		name    string
+		modify  func(*v1.Record)
+		wantErr string
+	}{
+		{
+			name: "missing decided_on in history",
+			modify: func(r *v1.Record) {
+				r.History = []v1.HistoryEntry{
+					{Option: "opt1", ModelSHA256: "abc"},
+				}
+			},
+			wantErr: "history[0] is missing decided_on",
+		},
+		{
+			name: "missing option in history",
+			modify: func(r *v1.Record) {
+				r.History = []v1.HistoryEntry{
+					{DecidedOn: "2026-09-01", ModelSHA256: "abc"},
+				}
+			},
+			wantErr: "history[0] is missing option",
+		},
+		{
+			name: "missing model_sha256 in history",
+			modify: func(r *v1.Record) {
+				r.History = []v1.HistoryEntry{
+					{DecidedOn: "2026-09-01", Option: "opt1"},
+				}
+			},
+			wantErr: "history[0] is missing model_sha256",
+		},
+		{
+			name: "valid history entry",
+			modify: func(r *v1.Record) {
+				r.History = []v1.HistoryEntry{
+					{DecidedOn: "2026-09-01", Option: "opt1", Title: "Option 1", ModelSHA256: "old_hash"},
+				}
+			},
+			wantErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := validRecord()
+			tt.modify(&rec)
+			err := rec.Validate()
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateRecordGathersMultipleErrors(t *testing.T) {
+	rec := v1.Record{
+		Version:     "wrong",
+		ModelSHA256: "",
+		DecidedOn:   "",
+		Model: v1.Document{
+			Metadata: v1.Metadata{Version: v1.VersionV1},
+			Schema: v1.Schema{
+				Title:         "Test",
+				DesignOptions: []v1.DesignOption{{ID: "opt1", Title: "O1"}},
+			},
+		},
+	}
+	err := rec.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid record version")
+	assert.Contains(t, err.Error(), "model_sha256 is required")
+	assert.Contains(t, err.Error(), "decided_on is required")
 }
