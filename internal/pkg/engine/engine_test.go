@@ -115,7 +115,7 @@ func TestEvaluateOptionStatus(t *testing.T) {
 		wantStatus map[string]v1.OptionStatus
 	}{
 		{
-			name: "all answered, hard req checked — opt2 muted, opt3 blocked",
+			name: "all answered, hard req checked — opt2 eliminated, opt3 blocked",
 			items: []v1.RecordItem{
 				{ID: "q1", Kind: v1.KindChoice, Answer: testutil.StrPtr("yes")},
 				{ID: "q2", Kind: v1.KindChoice, Answer: testutil.StrPtr("a")},
@@ -123,7 +123,7 @@ func TestEvaluateOptionStatus(t *testing.T) {
 			reqs: baseRequirements(),
 			wantStatus: map[string]v1.OptionStatus{
 				"opt1": v1.StatusPossible,
-				"opt2": v1.StatusMuted,
+				"opt2": v1.StatusEliminated,
 				"opt3": v1.StatusBlocked,
 			},
 		},
@@ -136,7 +136,7 @@ func TestEvaluateOptionStatus(t *testing.T) {
 			reqs: baseRequirements(),
 			wantStatus: map[string]v1.OptionStatus{
 				"opt1": v1.StatusPossible,
-				"opt2": v1.StatusMuted,
+				"opt2": v1.StatusEliminated,
 				"opt3": v1.StatusPossible,
 			},
 		},

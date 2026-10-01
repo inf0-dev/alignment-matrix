@@ -34,3 +34,4 @@ fmt:
 # update golden files for integration tests
 update_golden:
     @ go test -tags=integration ./internal/pkg/exporter/ -update
+    @ go test -tags=integration ./internal/pkg/renderer/ -update

@@ -1,0 +1,329 @@
+version: "alignment-matrix/record/v1"
+model:
+  metadata:
+    version: "alignment-matrix/v1"
+    attendees:
+      - Alice
+      - Bob
+      - Carol
+    date: "2026-09-15"
+  schema:
+    title: "Cache Strategy Decision"
+    issue: "https://github.com/example/project/issues/42"
+    categories:
+      - performance
+      - cost
+      - operations
+    requirements:
+      - id: req-latency
+        description: "P99 latency under 50ms"
+        is_hard: true
+      - id: req-budget
+        description: "Stay within $500/mo infrastructure budget"
+        is_hard: true
+      - id: req-ha
+        description: "99.9% availability SLA"
+        is_hard: true
+      - id: req-observability
+        description: "Supports distributed tracing"
+        is_hard: false
+      - id: req-team-skill
+        description: "Team has operational experience"
+        is_hard: false
+    items:
+      - id: q-traffic
+        description: "Expected peak traffic"
+        kind: choice
+        choice_options:
+          - id: low
+            description: "Under 1k RPS"
+          - id: mid
+            description: "1k–10k RPS"
+          - id: high
+            description: "Over 10k RPS"
+      - id: q-region
+        description: "Multi-region deployment"
+        kind: choice
+        choice_options:
+          - id: "yes"
+            description: "Yes, multi-region"
+          - id: "no"
+            description: "Single region"
+      - id: q-data-sensitivity
+        description: "Data sensitivity level"
+        kind: choice
+        note: "Affects where data can be cached and for how long"
+        choice_options:
+          - id: public
+            description: "Public data"
+          - id: internal
+            description: "Internal only"
+          - id: pii
+            description: "Contains PII"
+      - id: q-ttl
+        description: "Cache TTL"
+        kind: number
+        number_config:
+          unit: seconds
+          min: 1
+          max: 3600
+      - id: q-notes
+        description: "Additional context or constraints"
+        kind: text
+    design_options:
+      - id: opt-redis
+        title: "Redis Cluster"
+        description: "Managed Redis with read replicas and automatic failover"
+        requirements_met:
+          req-latency:
+            met: true
+          req-budget:
+            met: false
+            partial: true
+            reason: "Costs scale with cluster size, may exceed at high traffic"
+          req-ha:
+            met: true
+          req-observability:
+            met: true
+          req-team-skill:
+            met: true
+        effects:
+          "q-traffic.high":
+            - kind: changes
+              category: cost
+              text: "Requires 3+ read replicas, pushing costs to ~$800/mo"
+            - kind: note
+              category: performance
+              text: "Connection pooling strongly recommended"
+          "q-traffic.mid":
+            - kind: note
+              category: cost
+              text: "Single replica sufficient, stays within budget"
+          "q-region.yes":
+            - kind: changes
+              category: cost
+              text: "Cross-region replication doubles infrastructure cost"
+            - kind: changes
+              category: performance
+              text: "Replication lag adds 10-30ms to cross-region reads"
+          "q-data-sensitivity.pii":
+            - kind: changes
+              category: operations
+              text: "Requires encryption at rest and audit logging"
+        blocks:
+          - condition:
+              - "q-traffic.high"
+              - "q-region.yes"
+            reason: "Redis cross-region replication cannot meet latency SLA at high traffic volumes"
+        pros:
+          - "Battle-tested, rich data structures"
+          - "Strong community and tooling"
+          - "Built-in pub/sub for cache invalidation"
+        cons:
+          - "Operational overhead for cluster management"
+          - "Memory-bound, expensive at scale"
+      - id: opt-cdn
+        title: "CDN Edge Cache"
+        description: "Cache at the edge using a CDN provider like CloudFront or Fastly"
+        requirements_met:
+          req-latency:
+            met: true
+          req-budget:
+            met: true
+          req-ha:
+            met: true
+          req-observability:
+            met: false
+          req-team-skill:
+            met: false
+        effects:
+          "q-traffic.high":
+            - kind: note
+              category: performance
+              text: "CDN handles scale natively, no config changes needed"
+          "q-region.yes":
+            - kind: note
+              category: performance
+              text: "Edge nodes are inherently multi-region"
+          "q-data-sensitivity.internal":
+            - kind: changes
+              category: operations
+              text: "Requires signed URLs and origin authentication"
+          "q-data-sensitivity.pii":
+            - kind: changes
+              category: operations
+              text: "PII must not be cached at edge — breaks CDN caching model"
+        blocks:
+          - condition:
+              - "q-data-sensitivity.pii"
+            reason: "CDN edge caching is incompatible with PII data handling requirements"
+        pros:
+          - "Zero operational overhead"
+          - "Globally distributed by default"
+          - "Cost-effective at any scale"
+        cons:
+          - "Limited invalidation control (TTL-based)"
+          - "No tracing or observability built in"
+          - "Team has no CDN operational experience"
+      - id: opt-memcached
+        title: "Memcached"
+        description: "Simple in-memory key-value store, optimized for high-throughput reads"
+        requirements_met:
+          req-latency:
+            met: true
+          req-budget:
+            met: true
+          req-ha:
+            met: false
+          req-observability:
+            met: false
+          req-team-skill:
+            met: true
+        effects:
+          "q-traffic.high":
+            - kind: note
+              category: performance
+              text: "Excellent throughput, but no persistence if a node fails"
+          "q-region.yes":
+            - kind: changes
+              category: operations
+              text: "No built-in replication — must run independent clusters per region"
+        pros:
+          - "Extremely fast, simple protocol"
+          - "Low memory overhead per key"
+          - "Team already runs Memcached in production"
+        cons:
+          - "No persistence or replication"
+          - "No complex data structures"
+          - "Single point of failure without custom HA wrapper"
+      - id: opt-app-cache
+        title: "Application-Level Cache"
+        description: "In-process cache using an LRU library (e.g., Ristretto, BigCache)"
+        requirements_met:
+          req-latency:
+            met: true
+          req-budget:
+            met: true
+          req-ha:
+            met: false
+            partial: true
+            reason: "Availability tied to application instances — no shared state"
+          req-observability:
+            met: true
+          req-team-skill:
+            met: true
+        effects:
+          "q-traffic.high":
+            - kind: changes
+              category: performance
+              text: "Each instance maintains its own cache — cold starts after deploys"
+            - kind: note
+              category: cost
+              text: "Increases application memory footprint significantly"
+          "q-region.yes":
+            - kind: note
+              category: operations
+              text: "No cross-region concerns — each instance is independent"
+          "q-data-sensitivity.pii":
+            - kind: note
+              category: operations
+              text: "Data stays in-process, simplifies compliance"
+        blocks:
+          - condition:
+              - "q-traffic.high"
+              - "q-region.yes"
+            reason: "Per-instance caches cause severe cache fragmentation across regions at high traffic"
+        pros:
+          - "Zero infrastructure cost"
+          - "Sub-microsecond latency"
+          - "No network calls"
+        cons:
+          - "Not shared across instances"
+          - "Cache lost on deploy/restart"
+          - "Memory pressure on application pods"
+model_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+decided_on: "2026-10-01T14:30:00Z"
+present:
+  - Alice
+  - Bob
+  - Carol
+requirements:
+  - id: req-latency
+    is_hard: true
+    checked: true
+  - id: req-budget
+    is_hard: true
+    checked: true
+  - id: req-ha
+    is_hard: true
+    checked: true
+  - id: req-observability
+    is_hard: false
+    checked: true
+  - id: req-team-skill
+    is_hard: false
+    checked: false
+items:
+  - id: q-traffic
+    kind: choice
+  - id: q-region
+    kind: choice
+  - id: q-data-sensitivity
+    kind: choice
+  - id: q-ttl
+    kind: number
+    unit: seconds
+  - id: q-notes
+    kind: text
+options:
+  - id: opt-redis
+    status: possible
+    meets:
+      hard:
+        met: 2
+        of: 3
+      soft:
+        met: 1
+        of: 2
+    failed_requirements: []
+    fired_blocks: []
+  - id: opt-cdn
+    status: possible
+    meets:
+      hard:
+        met: 3
+        of: 3
+      soft:
+        met: 0
+        of: 2
+    failed_requirements: []
+    fired_blocks: []
+  - id: opt-memcached
+    status: eliminated
+    meets:
+      hard:
+        met: 2
+        of: 3
+      soft:
+        met: 1
+        of: 2
+    failed_requirements:
+      - req-ha
+    fired_blocks: []
+  - id: opt-app-cache
+    status: possible
+    meets:
+      hard:
+        met: 2
+        of: 3
+      soft:
+        met: 2
+        of: 2
+    failed_requirements: []
+    fired_blocks: []
+still_open:
+  - q-traffic
+  - q-region
+  - q-data-sensitivity
+  - q-ttl
+  - q-notes

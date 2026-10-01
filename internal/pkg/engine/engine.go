@@ -137,9 +137,9 @@ func evaluateOption(
 	}
 	recOpt.Effects = effects
 
-	// Determine status: muted > blocked > possible
+	// Determine status: eliminated > blocked > possible
 	if len(failedReqs) > 0 {
-		recOpt.Status = v1.StatusMuted
+		recOpt.Status = v1.StatusEliminated
 	} else if len(firedBlocks) > 0 {
 		recOpt.Status = v1.StatusBlocked
 	} else {

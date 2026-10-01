@@ -156,7 +156,7 @@ options:
         category: performance
         text: "Connection pooling recommended"
   - id: opt-cdn
-    status: muted
+    status: eliminated
     meets:
       hard:
         met: 2

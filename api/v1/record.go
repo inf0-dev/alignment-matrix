@@ -11,8 +11,8 @@ const (
 	StatusPicked OptionStatus = "picked"
 	// StatusPossible means this option is viable but was not picked.
 	StatusPossible OptionStatus = "possible"
-	// StatusMuted means this option fails a checked hard requirement.
-	StatusMuted OptionStatus = "muted"
+	// StatusEliminated means this option fails a checked hard requirement.
+	StatusEliminated OptionStatus = "eliminated"
 	// StatusBlocked means an answer combination makes this option unworkable.
 	StatusBlocked OptionStatus = "blocked"
 )
@@ -66,7 +66,7 @@ type FiredEffect struct {
 type RecordOption struct {
 	// ID is the design option ID.
 	ID string `json:"id" yaml:"id"`
-	// Status is the derived status: picked, possible, muted, or blocked.
+	// Status is the derived status: picked, possible, eliminated, or blocked.
 	Status OptionStatus `json:"status" yaml:"status"`
 	// Meets holds the count of met requirements by category.
 	Meets struct {
