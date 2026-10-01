@@ -18,8 +18,6 @@ type Requirement struct {
 type Kind string
 
 const (
-	// KindUnknown represents an unknown kind of item.
-	KindUnknown Kind = "unknown"
 	// KindChoice represents a choice item in the alignment matrix. These have a direct effect on design options available.
 	KindChoice Kind = "choice"
 	// KindText represents a text item in the alignment matrix. These are used for tracking and do not affect design options (no easy way to define "S text means option X is not possible").
@@ -51,12 +49,12 @@ type NumberConfig struct {
 type Item struct {
 	// ID is the unique identifier as a string for the item.
 	ID string `json:"id" yaml:"id"`
+	// Description is a human-readable description of the item.
+	Description string `json:"description" yaml:"description"`
 	// Kind indicates the kind of item (Choice, Text, or Number).
 	Kind Kind `json:"kind" yaml:"kind"`
 	// ChoiceOptions is a list of options for the item. This is only applicable for Choice items.
 	ChoiceOptions []ChoiceOption `json:"choice_options,omitempty" yaml:"choice_options,omitempty"`
-	// Description is a human-readable description of the item.
-	Description string `json:"description" yaml:"description"`
 	// Note is an optional clarification about the item.
 	Note string `json:"note,omitempty" yaml:"note,omitempty"`
 	// NumberConfig holds configuration specific to number items. Only valid when Kind is KindNumber.
@@ -138,9 +136,9 @@ type Metadata struct {
 type Schema struct {
 	// Title is the title of the alignment matrix (e.g., "Alignment Matrix for Project X").
 	Title string `json:"title" yaml:"title"`
-	// Issue is the Git issue link associated with the alignment, used for extra display purposes, not for validation or automated processing.
+	// Issue is the Git issue link associated with the alignment, used for extra display purposes, only the validity of the URL is validated (if set).
 	Issue string `json:"issue,omitempty" yaml:"issue,omitempty"`
-	// Categories is an optional list of valid category names. When set, every Effect.Category must be in this list.
+	// Categories is an optional list of valid category names. When set, every DesignOption Effect.Category must be in this list.
 	Categories []string `json:"categories,omitempty" yaml:"categories,omitempty"`
 	// Requirements is a list of requirements that the alignment matrix will evaluate.
 	Requirements []Requirement `json:"requirements,omitempty" yaml:"requirements,omitempty"`
