@@ -1,0 +1,174 @@
+version: "alignment-matrix/record/v1"
+model:
+  metadata:
+    version: "alignment-matrix/v1"
+    attendees:
+      - Alice
+      - Bob
+    date: "2026-09-15"
+  schema:
+    title: "Cache Strategy Decision"
+    issue: "https://github.com/example/project/issues/42"
+    categories:
+      - performance
+      - cost
+    requirements:
+      - id: req-latency
+        description: "P99 latency under 50ms"
+        is_hard: true
+      - id: req-budget
+        description: "Stay within infrastructure budget"
+        is_hard: true
+      - id: req-observability
+        description: "Supports distributed tracing"
+        is_hard: false
+    items:
+      - id: q-traffic
+        description: "Expected peak traffic"
+        kind: choice
+        choice_options:
+          - id: low
+            description: "Under 1k RPS"
+          - id: high
+            description: "Over 10k RPS"
+      - id: q-region
+        description: "Multi-region deployment"
+        kind: choice
+        choice_options:
+          - id: "yes"
+            description: "Yes, multi-region"
+          - id: "no"
+            description: "Single region"
+      - id: q-ttl
+        description: "Cache TTL"
+        kind: number
+        number_config:
+          unit: seconds
+          min: 1
+          max: 3600
+      - id: q-notes
+        description: "Additional notes"
+        kind: text
+    design_options:
+      - id: opt-redis
+        title: "Redis Cluster"
+        description: "Managed Redis with read replicas"
+        requirements_met:
+          req-latency:
+            met: true
+          req-budget:
+            met: false
+            partial: true
+            reason: "Costs scale with cluster size"
+          req-observability:
+            met: true
+        effects:
+          "q-traffic.high":
+            - kind: changes
+              category: cost
+              text: "Requires additional read replicas"
+            - kind: note
+              category: performance
+              text: "Connection pooling recommended"
+          "q-region.yes":
+            - kind: changes
+              category: cost
+              text: "Cross-region replication adds latency and cost"
+        blocks:
+          - condition:
+              - "q-traffic.high"
+              - "q-region.yes"
+            reason: "Redis cross-region replication cannot meet latency SLA at high traffic"
+        pros:
+          - "Battle-tested"
+          - "Rich data structures"
+        cons:
+          - "Operational overhead"
+      - id: opt-cdn
+        title: "CDN Edge Cache"
+        description: "Cache at the edge with a CDN provider"
+        requirements_met:
+          req-latency:
+            met: true
+          req-budget:
+            met: true
+          req-observability:
+            met: false
+        effects:
+          "q-traffic.high":
+            - kind: note
+              text: "CDN handles scale natively"
+        pros:
+          - "Zero operational overhead"
+        cons:
+          - "Limited invalidation control"
+model_sha256: "abc123def456"
+decided_on: "2026-10-01T14:30:00Z"
+present:
+  - Alice
+  - Bob
+  - Carol
+requirements:
+  - id: req-latency
+    is_hard: true
+    checked: true
+  - id: req-budget
+    is_hard: true
+    checked: true
+  - id: req-observability
+    is_hard: false
+    checked: true
+items:
+  - id: q-traffic
+    kind: choice
+    answer: high
+  - id: q-region
+    kind: choice
+    answer: "no"
+  - id: q-ttl
+    kind: number
+    value: 300
+    unit: seconds
+  - id: q-notes
+    kind: text
+    value: "Prioritize simplicity over flexibility"
+options:
+  - id: opt-redis
+    status: possible
+    meets:
+      hard:
+        met: 1
+        of: 2
+      soft:
+        met: 1
+        of: 1
+    failed_requirements: []
+    fired_blocks: []
+    effects:
+      - item: q-traffic
+        answer: high
+        kind: changes
+        category: cost
+        text: "Requires additional read replicas"
+      - item: q-traffic
+        answer: high
+        kind: note
+        category: performance
+        text: "Connection pooling recommended"
+  - id: opt-cdn
+    status: muted
+    meets:
+      hard:
+        met: 2
+        of: 2
+      soft:
+        met: 0
+        of: 1
+    failed_requirements:
+      - req-observability
+    fired_blocks: []
+final:
+  option: opt-redis
+  title: "Redis Cluster"
+  rationale: "Best balance of performance and flexibility for our use case"
+still_open: []

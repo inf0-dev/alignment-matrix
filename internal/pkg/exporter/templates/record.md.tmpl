@@ -1,0 +1,52 @@
+# {{ .Model.Schema.Title }}
+{{ if .Model.Schema.Issue }}
+**Issue:** {{ .Model.Schema.Issue }}
+{{ end }}{{ if .DecidedOn }}**Decided on:** {{ .DecidedOn }}
+{{ end }}{{ if .Present }}
+**Present:** {{ joinStrings .Present ", " }}
+{{ end }}
+{{ if .Final }}## Decision
+
+**Option:** [{{ .Final.Title }}](#{{ anchor .Final.Title }})
+{{ if .Final.Rationale }}
+**Rationale:** {{ .Final.Rationale }}
+{{ end }}
+{{ end }}{{ if .Requirements }}## Requirements
+
+| Requirement | Hard | Checked |
+|---|---|---|
+{{ range .Requirements }}| {{ requirementDesc $.Model .ID }} | {{ yesNo .IsHard }} | {{ yesNo .Checked }} |
+{{ end }}
+{{ end }}{{ if .Items }}## Items
+
+| Item | Answer / Value |
+|---|---|
+{{ range .Items }}| {{ itemDesc $.Model .ID }} | {{ itemValue $.Model . }} |
+{{ end }}
+{{ end }}{{ if .Options }}## Design Options
+{{ range .Options }}
+### {{ optionTitle $.Model .ID }}
+
+{{ optionDesc $.Model .ID }}
+
+**Status:** {{ .Status }}
+
+**Requirements met:** {{ .Meets.Hard.Met }}/{{ .Meets.Hard.Of }} hard, {{ .Meets.Soft.Met }}/{{ .Meets.Soft.Of }} soft
+{{ if .FailedRequirements }}
+**Failed requirements:** {{ joinFailedReqs $.Model .FailedRequirements }}
+{{ end }}{{ if .FiredBlocks }}
+**Blocked:** {{ joinStrings .FiredBlocks "; " }}
+{{ end }}{{ if .Effects }}
+**Effects:**
+{{ range .Effects -}}
+- {{ if .Category }}[{{ .Category }}] {{ end }}{{ .Text }} ({{ .Kind }})
+{{ end }}{{ end }}{{ if optionPros $.Model .ID }}
+**Pros:**
+{{ range optionPros $.Model .ID -}}
+- {{ . }}
+{{ end }}{{ end }}{{ if optionCons $.Model .ID }}
+**Cons:**
+{{ range optionCons $.Model .ID -}}
+- {{ . }}
+{{ end }}{{ end }}
+{{ end }}{{ end }}

@@ -30,3 +30,7 @@ lint:
 
 fmt:
     @ go fmt ./...
+
+# update golden files for integration tests
+update_golden:
+    @ go test -tags=integration ./internal/pkg/exporter/ -update

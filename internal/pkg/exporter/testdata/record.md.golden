@@ -1,0 +1,68 @@
+# Cache Strategy Decision
+
+**Issue:** https://github.com/example/project/issues/42
+**Decided on:** 2026-10-01T14:30:00Z
+
+**Present:** Alice, Bob, Carol
+
+## Decision
+
+**Option:** [Redis Cluster](#redis-cluster)
+
+**Rationale:** Best balance of performance and flexibility for our use case
+
+## Requirements
+
+| Requirement | Hard | Checked |
+|---|---|---|
+| P99 latency under 50ms | Yes | Yes |
+| Stay within infrastructure budget | Yes | Yes |
+| Supports distributed tracing | No | Yes |
+
+## Items
+
+| Item | Answer / Value |
+|---|---|
+| Expected peak traffic | Over 10k RPS |
+| Multi-region deployment | Single region |
+| Cache TTL | 300 seconds |
+| Additional notes | Prioritize simplicity over flexibility |
+
+## Design Options
+
+### Redis Cluster
+
+Managed Redis with read replicas
+
+**Status:** possible
+
+**Requirements met:** 1/2 hard, 1/1 soft
+
+**Effects:**
+- [cost] Requires additional read replicas (changes)
+- [performance] Connection pooling recommended (note)
+
+**Pros:**
+- Battle-tested
+- Rich data structures
+
+**Cons:**
+- Operational overhead
+
+
+### CDN Edge Cache
+
+Cache at the edge with a CDN provider
+
+**Status:** muted
+
+**Requirements met:** 2/2 hard, 0/1 soft
+
+**Failed requirements:** Supports distributed tracing
+
+**Pros:**
+- Zero operational overhead
+
+**Cons:**
+- Limited invalidation control
+
