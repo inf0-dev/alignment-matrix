@@ -53,3 +53,6 @@ update_golden:
 # run the server
 serve:
     @ go run ./app/cli serve
+
+build:
+    @ go build -o {{ out_dir }}/alma ./app/cli
