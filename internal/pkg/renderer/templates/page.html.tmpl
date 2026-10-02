@@ -10,9 +10,9 @@
   <header class="page-header">
     <div class="header-row">
       <h1>{{ .Model.Schema.Title }}</h1>
-      <button type="button" class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
     </div>
     <div class="meta">
@@ -24,7 +24,7 @@
 
   <details class="section" open>
     <summary class="section-heading">
-      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       <span class="section-title">Requirements <span class="section-count">({{ len .Requirements }})</span></span>
     </summary>
     <div class="requirements">
@@ -39,28 +39,28 @@
 
   <details class="section" open>
     <summary class="section-heading">
-      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       <span class="section-title">Items <span class="section-count">({{ len .Items }})</span></span>
     </summary>
     <div class="items">
       {{ range .Items -}}
       {{ $item := schemaItem $.Model .ID -}}
       <div class="item{{ if eq (string .Kind) "text" }} item-text{{ end }}">
-        <div class="item-label">{{ $item.Description }}</div>
+        <label class="item-label" for="input-{{ $item.ID }}">{{ $item.Description }}</label>
         {{ if $item.Note }}<div class="note">{{ $item.Note }}</div>{{ end }}
         {{ if eq (string .Kind) "choice" -}}
-        <div class="choices">
+        <div class="choices" id="input-{{ $item.ID }}">
           {{ range $item.ChoiceOptions -}}
           <button type="button" class="choice{{ if eq (derefOr $.Items $item.ID) .ID }} selected{{ end }}" data-item="{{ $item.ID }}" data-answer="{{ .ID }}" aria-pressed="{{ if eq (derefOr $.Items $item.ID) .ID }}true{{ else }}false{{ end }}">{{ .Description }}</button>
           {{ end }}
         </div>
         {{ else if eq (string .Kind) "number" -}}
-        <input type="number" class="item-input" data-item="{{ $item.ID }}" aria-label="{{ $item.Description }}"
+        <input type="number" id="input-{{ $item.ID }}" class="item-input" data-item="{{ $item.ID }}"
           {{ if $item.NumberConfig }}{{ if $item.NumberConfig.Min }}min="{{ derefInt $item.NumberConfig.Min }}"{{ end }} {{ if $item.NumberConfig.Max }}max="{{ derefInt $item.NumberConfig.Max }}"{{ end }}{{ end }}
           {{ if .Value }}value="{{ .Value }}"{{ end }}
           {{ if .Unit }}placeholder="{{ .Unit }}"{{ end }}>
         {{ else -}}
-        <textarea class="item-input" data-item="{{ $item.ID }}" aria-label="{{ $item.Description }}" placeholder="Enter text...">{{ if .Value }}{{ .Value }}{{ end }}</textarea>
+        <textarea id="input-{{ $item.ID }}" class="item-input" data-item="{{ $item.ID }}" placeholder="Enter text...">{{ if .Value }}{{ .Value }}{{ end }}</textarea>
         {{ end }}
       </div>
       {{ end }}
@@ -69,7 +69,7 @@
 
   <details class="section" open>
     <summary class="section-heading">
-      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       <span class="section-title">Design Options <span class="section-count">({{ len .Options }})</span></span>
     </summary>
     <div class="options-split">

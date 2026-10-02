@@ -12,9 +12,11 @@
   --border-strong: #d4d4d4;
   --text: #1a1a1a;
   --text-secondary: #555555;
-  --text-tertiary: #888888;
-  --accent: #2563eb;
+  --text-tertiary: #6b6b6b;
+  --accent: #1d4ed8;
   --accent-soft: #eff4ff;
+  --accent-active-bg: #dbeafe;
+  --accent-active-fg: #1e3a5f;
   --success: #16a34a;
   --success-bg: #f0fdf4;
   --success-border: #bbf7d0;
@@ -44,9 +46,11 @@
     --border-strong: #3a3a3a;
     --text: #e5e5e5;
     --text-secondary: #a0a0a0;
-    --text-tertiary: #707070;
+    --text-tertiary: #8a8a8a;
     --accent: #4d8bf5;
     --accent-soft: #1a2744;
+    --accent-active-bg: #1e3a5f;
+    --accent-active-fg: #93bbfd;
     --success: #22c55e;
     --success-bg: #0c2618;
     --success-border: #166534;
@@ -190,19 +194,19 @@ details[open] > .section-heading .chevron {
   border-radius: 3px;
 }
 .req.active {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--accent-active-bg);
+  color: var(--accent-active-fg);
   border-color: var(--accent);
 }
 .req.active:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--accent-active-bg);
+  color: var(--accent-active-fg);
   border-color: var(--accent);
   box-shadow: var(--shadow-md);
 }
 .req.active .req-type {
   background: var(--accent);
-  color: white;
+  color: #ffffff;
 }
 
 /* Items */
@@ -227,6 +231,7 @@ details[open] > .section-heading .chevron {
 }
 
 .item-label {
+  display: block;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
@@ -336,6 +341,9 @@ input::placeholder, textarea::placeholder {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
+.option-list-item.active .req-grid-label {
+  color: var(--text-secondary);
+}
 .option-list-item.blocked { opacity: 0.7; }
 .option-list-item.eliminated { opacity: 0.5; }
 .option-list-item.active.blocked,
@@ -441,7 +449,7 @@ input::placeholder, textarea::placeholder {
 }
 
 /* Details within options */
-.failed-reqs {
+.failed-reqs, .blocks-list {
   font-size: 0.85rem;
   color: var(--danger);
   font-weight: 500;
@@ -449,20 +457,30 @@ input::placeholder, textarea::placeholder {
   padding: 0.375rem 0.5rem;
   background: var(--danger-bg);
   border-radius: var(--radius-sm);
+  list-style: none;
+}
+.blocks-list li {
+  padding: 0.25rem 0;
+  line-height: 1.4;
+}
+.blocks-list li + li {
+  border-top: 1px solid var(--danger-border);
+  padding-top: 0.375rem;
+  margin-top: 0.125rem;
 }
 
-.blocks-list, .effects-list {
+.effects-list {
   list-style: none;
   font-size: 0.9rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
   border-top: 1px solid var(--border);
 }
-.blocks-list li, .effects-list li {
+.effects-list li {
   padding: 0.25rem 0;
   line-height: 1.4;
 }
-.blocks-list li + li, .effects-list li + li {
+.effects-list li + li {
   border-top: 1px solid var(--border);
   padding-top: 0.375rem;
   margin-top: 0.125rem;
@@ -595,9 +613,9 @@ input::placeholder, textarea::placeholder {
   <header class="page-header">
     <div class="header-row">
       <h1>Cache Strategy Decision</h1>
-      <button type="button" class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
     </div>
     <div class="meta">
@@ -609,7 +627,7 @@ input::placeholder, textarea::placeholder {
 
   <details class="section" open>
     <summary class="section-heading">
-      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       <span class="section-title">Requirements <span class="section-count">(10)</span></span>
     </summary>
     <div class="requirements">
@@ -659,14 +677,14 @@ input::placeholder, textarea::placeholder {
 
   <details class="section" open>
     <summary class="section-heading">
-      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       <span class="section-title">Items <span class="section-count">(5)</span></span>
     </summary>
     <div class="items">
       <div class="item">
-        <div class="item-label">Expected peak traffic</div>
+        <label class="item-label" for="input-q-traffic">Expected peak traffic</label>
         
-        <div class="choices">
+        <div class="choices" id="input-q-traffic">
           <button type="button" class="choice" data-item="q-traffic" data-answer="low" aria-pressed="false">Under 1k RPS</button>
           <button type="button" class="choice" data-item="q-traffic" data-answer="mid" aria-pressed="false">1k–10k RPS</button>
           <button type="button" class="choice" data-item="q-traffic" data-answer="high" aria-pressed="false">Over 10k RPS</button>
@@ -675,9 +693,9 @@ input::placeholder, textarea::placeholder {
         
       </div>
       <div class="item">
-        <div class="item-label">Multi-region deployment</div>
+        <label class="item-label" for="input-q-region">Multi-region deployment</label>
         
-        <div class="choices">
+        <div class="choices" id="input-q-region">
           <button type="button" class="choice" data-item="q-region" data-answer="yes" aria-pressed="false">Yes, multi-region</button>
           <button type="button" class="choice" data-item="q-region" data-answer="no" aria-pressed="false">Single region</button>
           
@@ -685,9 +703,9 @@ input::placeholder, textarea::placeholder {
         
       </div>
       <div class="item">
-        <div class="item-label">Data sensitivity level</div>
+        <label class="item-label" for="input-q-data-sensitivity">Data sensitivity level</label>
         <div class="note">Affects where data can be cached and for how long</div>
-        <div class="choices">
+        <div class="choices" id="input-q-data-sensitivity">
           <button type="button" class="choice" data-item="q-data-sensitivity" data-answer="public" aria-pressed="false">Public data</button>
           <button type="button" class="choice" data-item="q-data-sensitivity" data-answer="internal" aria-pressed="false">Internal only</button>
           <button type="button" class="choice" data-item="q-data-sensitivity" data-answer="pii" aria-pressed="false">Contains PII</button>
@@ -696,18 +714,18 @@ input::placeholder, textarea::placeholder {
         
       </div>
       <div class="item">
-        <div class="item-label">Cache TTL</div>
+        <label class="item-label" for="input-q-ttl">Cache TTL</label>
         
-        <input type="number" class="item-input" data-item="q-ttl" aria-label="Cache TTL"
+        <input type="number" id="input-q-ttl" class="item-input" data-item="q-ttl"
           min="1" max="3600"
           
           placeholder="seconds">
         
       </div>
       <div class="item item-text">
-        <div class="item-label">Additional context or constraints</div>
+        <label class="item-label" for="input-q-notes">Additional context or constraints</label>
         
-        <textarea class="item-input" data-item="q-notes" aria-label="Additional context or constraints" placeholder="Enter text..."></textarea>
+        <textarea id="input-q-notes" class="item-input" data-item="q-notes" placeholder="Enter text..."></textarea>
         
       </div>
       
@@ -716,7 +734,7 @@ input::placeholder, textarea::placeholder {
 
   <details class="section" open>
     <summary class="section-heading">
-      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       <span class="section-title">Design Options <span class="section-count">(4)</span></span>
     </summary>
     <div class="options-split">

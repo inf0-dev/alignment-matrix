@@ -31,6 +31,20 @@ lint:
 fmt:
     @ go fmt ./...
 
+# run accessibility check on rendered demo (light + dark)
+a11y: demo
+    @ echo "--- light mode ---"
+    @ pa11y {{ out_dir }}/demo.html || true
+    @ sed 's/<html lang="en">/<html lang="en" data-theme="dark">/' {{ out_dir }}/demo.html > {{ out_dir }}/demo-dark.html
+    @ echo "--- dark mode ---"
+    @ pa11y {{ out_dir }}/demo-dark.html || true
+
+# render demo HTML and open in browser
+demo:
+    {{ init_dir_ine(out_dir) }}
+    @ go run ./app/cli render -p internal/pkg/renderer/testdata/demo.yaml -t record -o {{ out_dir }}/demo.html
+    @ open {{ out_dir }}/demo.html
+
 # update golden files for integration tests
 update_golden:
     @ go test -tags=integration ./internal/pkg/exporter/ -update
