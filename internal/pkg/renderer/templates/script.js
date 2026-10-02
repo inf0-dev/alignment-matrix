@@ -256,6 +256,33 @@ document.addEventListener("DOMContentLoaded", function () {
     return div.innerHTML;
   }
 
+  // Load button
+  var loadBtn = document.getElementById("load-btn");
+  var loadInput = document.getElementById("load-file-input");
+  if (loadBtn && loadInput) {
+    loadBtn.addEventListener("click", function () { loadInput.click(); });
+    loadInput.addEventListener("change", function () {
+      if (!loadInput.files.length) return;
+      var form = new FormData();
+      form.append("file", loadInput.files[0]);
+      fetch("/upload", { method: "POST", body: form }).then(function (resp) {
+        if (resp.ok) {
+          window.location.reload();
+        } else {
+          resp.text().then(function (t) { alert("Load failed: " + t); });
+        }
+      });
+    });
+  }
+
+  // Export button
+  var exportBtn = document.getElementById("export-btn");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", function () {
+      window.location.href = "/export";
+    });
+  }
+
   // Initial evaluation
   evaluate();
 });

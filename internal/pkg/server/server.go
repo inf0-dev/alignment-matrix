@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/inf0-dev/alignment-matrix/internal/pkg/engine"
 	"github.com/inf0-dev/alignment-matrix/internal/pkg/parser"
 	"github.com/inf0-dev/alignment-matrix/internal/pkg/renderer"
+	"go.yaml.in/yaml/v4"
 )
 
 //go:embed templates/upload.html.tmpl
@@ -50,6 +52,7 @@ func (s *Server) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.handleHealthz)
 	mux.HandleFunc("/upload", s.handleUpload)
+	mux.HandleFunc("/export", s.handleExport)
 	mux.HandleFunc("/", s.handlePage)
 
 	srv := &http.Server{
@@ -67,6 +70,7 @@ func (s *Server) Run(ctx context.Context) error {
 	go func() {
 		<-ctx.Done()
 		s.shuttingDown.Store(true)
+		fmt.Println("Shutting down server...")
 		time.Sleep(2 * time.Second) // let any LB stop routing
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -147,6 +151,33 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	s.mu.RLock()
+	rec := s.record
+	s.mu.RUnlock()
+
+	if rec == nil {
+		http.Error(w, "no document loaded", http.StatusNotFound)
+		return
+	}
+
+	data, err := yaml.Marshal(rec)
+	if err != nil {
+		http.Error(w, "failed to marshal record", http.StatusInternalServerError)
+		return
+	}
+
+	filename := slugify(rec.Model.Schema.Title) + ".yaml"
+	w.Header().Set("Content-Type", "application/x-yaml")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	_, _ = w.Write(data)
+}
+
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
 	if s.shuttingDown.Load() {
 		w.WriteHeader(http.StatusServiceUnavailable)
@@ -155,6 +186,23 @@ func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok"))
+}
+
+func slugify(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	var b strings.Builder
+	for _, r := range s {
+		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		} else if r == ' ' || r == '-' || r == '_' {
+			b.WriteRune('-')
+		}
+	}
+	result := b.String()
+	if result == "" {
+		return "record"
+	}
+	return result
 }
 
 func parseUpload(data []byte, filename string) (*v1.Record, error) {
