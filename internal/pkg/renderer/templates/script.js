@@ -83,6 +83,19 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  // Bind option list items (master-detail selection)
+  document.querySelectorAll(".option-list-item").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var optId = this.dataset.optionId;
+      document.querySelectorAll(".option-list-item").forEach(function (b) {
+        b.classList.toggle("active", b.dataset.optionId === optId);
+      });
+      document.querySelectorAll(".option-detail-panel").forEach(function (p) {
+        p.classList.toggle("active", p.id === "option-" + optId);
+      });
+    });
+  });
+
   function evaluate() {
     var checkedReqs = {};
     state.requirements.forEach(function (r) { checkedReqs[r.id] = r.checked; });
@@ -143,39 +156,32 @@ document.addEventListener("DOMContentLoaded", function () {
       else if (firedBlocks.length > 0) { status = "blocked"; }
       else { status = "possible"; }
 
-      // Update DOM
+      // Update list item
+      var listItem = document.querySelector('.option-list-item[data-option-id="' + opt.id + '"]');
+      if (listItem) {
+        var wasActive = listItem.classList.contains("active");
+        listItem.className = "option-list-item " + status + (wasActive ? " active" : "");
+        var listStatus = listItem.querySelector(".option-status");
+        listStatus.textContent = status;
+        listStatus.className = "option-status " + status;
+
+        // Update list item req grid
+        var listGrid = listItem.querySelector(".req-grid");
+        if (listGrid) {
+          updateReqGrid(listGrid, reqsMet, hardReqs, checkedReqs, hardMet, hardOf, softMet, softOf);
+        }
+      }
+
+      // Update detail panel
       var el = document.getElementById("option-" + opt.id);
       if (!el) return;
 
-      el.className = "option " + status;
+      var wasActive = el.classList.contains("active");
+      el.className = "option-detail-panel " + status + (wasActive ? " active" : "");
 
       var statusEl = el.querySelector(".option-status");
       statusEl.textContent = status;
       statusEl.className = "option-status " + status;
-
-      // Requirement grid
-      var gridEl = el.querySelector(".req-grid");
-      if (gridEl) {
-        var cells = gridEl.querySelectorAll(".req-cell");
-        cells.forEach(function (cell) {
-          var reqId = cell.dataset.req;
-          var reqStatus = reqsMet[reqId];
-          var isHard = hardReqs[reqId];
-          var checked = checkedReqs[reqId];
-          cell.className = "req-cell";
-          if (reqStatus) {
-            if (reqStatus.met) {
-              cell.classList.add("met");
-            } else if (reqStatus.partial) {
-              cell.classList.add("partial");
-            } else if (checked && isHard) {
-              cell.classList.add("failed");
-            }
-          }
-        });
-        var label = gridEl.querySelector(".req-grid-label");
-        label.textContent = hardMet + "/" + hardOf + " hard · " + softMet + "/" + softOf + " soft";
-      }
 
       // Failed requirements
       var failedEl = el.querySelector(".failed-reqs");
@@ -213,6 +219,28 @@ document.addEventListener("DOMContentLoaded", function () {
         effectsEl.style.display = "none";
       }
     });
+  }
+
+  function updateReqGrid(gridEl, reqsMet, hardReqs, checkedReqs, hardMet, hardOf, softMet, softOf) {
+    var cells = gridEl.querySelectorAll(".req-cell");
+    cells.forEach(function (cell) {
+      var reqId = cell.dataset.req;
+      var reqStatus = reqsMet[reqId];
+      var isHard = hardReqs[reqId];
+      var checked = checkedReqs[reqId];
+      cell.className = "req-cell";
+      if (reqStatus) {
+        if (reqStatus.met) {
+          cell.classList.add("met");
+        } else if (reqStatus.partial) {
+          cell.classList.add("partial");
+        } else if (checked && isHard) {
+          cell.classList.add("failed");
+        }
+      }
+    });
+    var label = gridEl.querySelector(".req-grid-label");
+    label.textContent = hardMet + "/" + hardOf + " hard · " + softMet + "/" + softOf + " soft";
   }
 
   function escapeHtml(s) {

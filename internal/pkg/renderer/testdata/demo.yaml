@@ -30,6 +30,21 @@ model:
       - id: req-team-skill
         description: "Team has operational experience"
         is_hard: false
+      - id: req-encryption
+        description: "Encryption at rest"
+        is_hard: true
+      - id: req-backup
+        description: "Automated daily backups"
+        is_hard: false
+      - id: req-compliance
+        description: "SOC 2 compliant"
+        is_hard: true
+      - id: req-migration
+        description: "Zero-downtime migration path"
+        is_hard: false
+      - id: req-multitenancy
+        description: "Supports multi-tenant isolation"
+        is_hard: false
     items:
       - id: q-traffic
         description: "Expected peak traffic"
@@ -87,6 +102,18 @@ model:
             met: true
           req-team-skill:
             met: true
+          req-encryption:
+            met: true
+          req-backup:
+            met: true
+          req-compliance:
+            met: true
+          req-migration:
+            met: false
+            partial: true
+            reason: "Requires careful key migration strategy"
+          req-multitenancy:
+            met: true
         effects:
           "q-traffic.high":
             - kind: changes
@@ -136,6 +163,16 @@ model:
             met: false
           req-team-skill:
             met: false
+          req-encryption:
+            met: false
+          req-backup:
+            met: false
+          req-compliance:
+            met: false
+          req-migration:
+            met: true
+          req-multitenancy:
+            met: false
         effects:
           "q-traffic.high":
             - kind: note
@@ -179,6 +216,16 @@ model:
             met: false
           req-team-skill:
             met: true
+          req-encryption:
+            met: false
+          req-backup:
+            met: false
+          req-compliance:
+            met: false
+          req-migration:
+            met: true
+          req-multitenancy:
+            met: false
         effects:
           "q-traffic.high":
             - kind: note
@@ -211,6 +258,16 @@ model:
           req-observability:
             met: true
           req-team-skill:
+            met: true
+          req-encryption:
+            met: true
+          req-backup:
+            met: false
+          req-compliance:
+            met: true
+          req-migration:
+            met: true
+          req-multitenancy:
             met: true
         effects:
           "q-traffic.high":
@@ -263,6 +320,21 @@ requirements:
   - id: req-team-skill
     is_hard: false
     checked: false
+  - id: req-encryption
+    is_hard: true
+    checked: true
+  - id: req-backup
+    is_hard: false
+    checked: true
+  - id: req-compliance
+    is_hard: true
+    checked: true
+  - id: req-migration
+    is_hard: false
+    checked: false
+  - id: req-multitenancy
+    is_hard: false
+    checked: true
 items:
   - id: q-traffic
     kind: choice

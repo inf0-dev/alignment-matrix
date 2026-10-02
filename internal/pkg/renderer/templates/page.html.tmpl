@@ -72,57 +72,69 @@
       <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       <span class="section-title">Design Options <span class="section-count">({{ len .Options }})</span></span>
     </summary>
-    <div class="options">
-      {{ range .Options -}}
-      {{ $opt := schemaOption $.Model .ID -}}
-      <div id="option-{{ .ID }}" class="option {{ .Status }}">
-        <div class="option-header">
-          <span class="option-title">{{ $opt.Title }}</span>
-          <span class="option-status {{ .Status }}">{{ .Status }}</span>
-        </div>
-        {{ if $opt.Description }}<div class="option-desc">{{ $opt.Description }}</div>{{ end }}
+    <div class="options-split">
+      <div class="options-list">
+        {{ range .Options -}}
+        {{ $opt := schemaOption $.Model .ID -}}
+        <button type="button" class="option-list-item {{ .Status }}{{ if eq (index $.Options 0).ID .ID }} active{{ end }}" data-option-id="{{ .ID }}">
+          <div class="option-list-header">
+            <span class="option-title">{{ $opt.Title }}</span>
+            <span class="option-status {{ .Status }}">{{ .Status }}</span>
+          </div>
+          <div class="req-grid" data-option="{{ .ID }}">
+            <div class="req-grid-cells">
+              {{ range reqGridCells $.Model .ID -}}
+              <div class="req-cell {{ .Status }}" title="{{ .Desc }} ({{ .Type }}) — {{ .Status }}" data-req="{{ .ID }}"></div>
+              {{ end }}
+            </div>
+            <span class="req-grid-label">{{ .Meets.Hard.Met }}/{{ .Meets.Hard.Of }} hard · {{ .Meets.Soft.Met }}/{{ .Meets.Soft.Of }} soft</span>
+          </div>
+        </button>
+        {{ end }}
+      </div>
+      <div class="option-detail">
+        {{ range .Options -}}
+        {{ $opt := schemaOption $.Model .ID -}}
+        <div id="option-{{ .ID }}" class="option-detail-panel {{ .Status }}{{ if eq (index $.Options 0).ID .ID }} active{{ end }}">
+          <div class="option-detail-header">
+            <span class="option-title">{{ $opt.Title }}</span>
+            <span class="option-status {{ .Status }}">{{ .Status }}</span>
+          </div>
+          {{ if $opt.Description }}<div class="option-desc">{{ $opt.Description }}</div>{{ end }}
 
-        <div class="req-grid" data-option="{{ .ID }}">
-          <div class="req-grid-cells">
-            {{ range reqGridCells $.Model .ID -}}
-            <div class="req-cell {{ .Status }}" title="{{ .Desc }} ({{ .Type }}) — {{ .Status }}" data-req="{{ .ID }}"></div>
+          <div class="failed-reqs" {{ if not .FailedRequirements }}style="display:none"{{ end }}>
+            {{ if .FailedRequirements }}Failed: {{ joinFailedReqs $.Model .FailedRequirements }}{{ end }}
+          </div>
+
+          <ul class="blocks-list" {{ if not .FiredBlocks }}style="display:none"{{ end }}>
+            {{ range .FiredBlocks }}<li class="block-reason">{{ . }}</li>{{ end }}
+          </ul>
+
+          {{ if or $opt.Pros $opt.Cons -}}
+          <div class="pros-cons">
+            {{ if $opt.Pros -}}
+            <div class="pros">
+              <div class="pros-cons-label">Pros</div>
+              <ul>{{ range $opt.Pros }}<li>{{ . }}</li>{{ end }}</ul>
+            </div>
+            {{ end }}
+            {{ if $opt.Cons -}}
+            <div class="cons">
+              <div class="pros-cons-label">Cons</div>
+              <ul>{{ range $opt.Cons }}<li>{{ . }}</li>{{ end }}</ul>
+            </div>
             {{ end }}
           </div>
-          <span class="req-grid-label">{{ .Meets.Hard.Met }}/{{ .Meets.Hard.Of }} hard · {{ .Meets.Soft.Met }}/{{ .Meets.Soft.Of }} soft</span>
-        </div>
-
-        <div class="failed-reqs" {{ if not .FailedRequirements }}style="display:none"{{ end }}>
-          {{ if .FailedRequirements }}Failed: {{ joinFailedReqs $.Model .FailedRequirements }}{{ end }}
-        </div>
-
-        <ul class="blocks-list" {{ if not .FiredBlocks }}style="display:none"{{ end }}>
-          {{ range .FiredBlocks }}<li class="block-reason">{{ . }}</li>{{ end }}
-        </ul>
-
-        {{ if or $opt.Pros $opt.Cons -}}
-        <div class="pros-cons">
-          {{ if $opt.Pros -}}
-          <div class="pros">
-            <div class="pros-cons-label">Pros</div>
-            <ul>{{ range $opt.Pros }}<li>{{ . }}</li>{{ end }}</ul>
-          </div>
           {{ end }}
-          {{ if $opt.Cons -}}
-          <div class="cons">
-            <div class="pros-cons-label">Cons</div>
-            <ul>{{ range $opt.Cons }}<li>{{ . }}</li>{{ end }}</ul>
-          </div>
-          {{ end }}
+
+          <ul class="effects-list" {{ if not .Effects }}style="display:none"{{ end }}>
+            {{ range .Effects -}}
+            <li>{{ if .Category }}<span class="effect-category">{{ .Category }}</span>{{ end }}{{ .Text }} <span style="color:var(--text-tertiary)">({{ .Kind }})</span></li>
+            {{ end }}
+          </ul>
         </div>
         {{ end }}
-
-        <ul class="effects-list" {{ if not .Effects }}style="display:none"{{ end }}>
-          {{ range .Effects -}}
-          <li>{{ if .Category }}<span class="effect-category">{{ .Category }}</span>{{ end }}{{ .Text }} <span style="color:var(--text-tertiary)">({{ .Kind }})</span></li>
-          {{ end }}
-        </ul>
       </div>
-      {{ end }}
     </div>
   </details>
 

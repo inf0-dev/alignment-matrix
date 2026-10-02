@@ -316,6 +316,9 @@ input::placeholder, textarea::placeholder {
 .option.blocked { opacity: 0.7; }
 .option.eliminated { opacity: 0.5; }
 
+details.option > summary { list-style: none; cursor: pointer; }
+details.option > summary::-webkit-details-marker { display: none; }
+
 .option-header {
   display: flex;
   justify-content: space-between;
@@ -323,6 +326,7 @@ input::placeholder, textarea::placeholder {
   gap: 0.75rem;
   margin-bottom: 0.375rem;
 }
+details.option:not([open]) .option-header { margin-bottom: 0; }
 
 .option-title {
   font-weight: 700;
@@ -638,11 +642,11 @@ input::placeholder, textarea::placeholder {
       <span class="section-title">Design Options <span class="section-count">(4)</span></span>
     </summary>
     <div class="options">
-      <div id="option-opt-redis" class="option possible">
-        <div class="option-header">
+      <details id="option-opt-redis" class="option possible" open>
+        <summary class="option-header">
           <span class="option-title">Redis Cluster</span>
           <span class="option-status possible">possible</span>
-        </div>
+        </summary>
         <div class="option-desc">Managed Redis with read replicas and automatic failover</div>
 
         <div class="req-grid" data-option="opt-redis">
@@ -682,12 +686,12 @@ input::placeholder, textarea::placeholder {
         <ul class="effects-list" style="display:none">
           
         </ul>
-      </div>
-      <div id="option-opt-cdn" class="option possible">
-        <div class="option-header">
+      </details>
+      <details id="option-opt-cdn" class="option possible" open>
+        <summary class="option-header">
           <span class="option-title">CDN Edge Cache</span>
           <span class="option-status possible">possible</span>
-        </div>
+        </summary>
         <div class="option-desc">Cache at the edge using a CDN provider like CloudFront or Fastly</div>
 
         <div class="req-grid" data-option="opt-cdn">
@@ -727,12 +731,12 @@ input::placeholder, textarea::placeholder {
         <ul class="effects-list" style="display:none">
           
         </ul>
-      </div>
-      <div id="option-opt-memcached" class="option eliminated">
-        <div class="option-header">
+      </details>
+      <details id="option-opt-memcached" class="option eliminated" open>
+        <summary class="option-header">
           <span class="option-title">Memcached</span>
           <span class="option-status eliminated">eliminated</span>
-        </div>
+        </summary>
         <div class="option-desc">Simple in-memory key-value store, optimized for high-throughput reads</div>
 
         <div class="req-grid" data-option="opt-memcached">
@@ -772,12 +776,12 @@ input::placeholder, textarea::placeholder {
         <ul class="effects-list" style="display:none">
           
         </ul>
-      </div>
-      <div id="option-opt-app-cache" class="option possible">
-        <div class="option-header">
+      </details>
+      <details id="option-opt-app-cache" class="option possible" open>
+        <summary class="option-header">
           <span class="option-title">Application-Level Cache</span>
           <span class="option-status possible">possible</span>
-        </div>
+        </summary>
         <div class="option-desc">In-process cache using an LRU library (e.g., Ristretto, BigCache)</div>
 
         <div class="req-grid" data-option="opt-app-cache">
@@ -817,7 +821,7 @@ input::placeholder, textarea::placeholder {
         <ul class="effects-list" style="display:none">
           
         </ul>
-      </div>
+      </details>
       
     </div>
   </details>
