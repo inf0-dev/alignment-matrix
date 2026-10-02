@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
@@ -30,9 +31,10 @@ type Config struct {
 
 // Server serves an alignment matrix record as an interactive HTML page.
 type Server struct {
-	cfg    Config
-	mu     sync.RWMutex
-	record *v1.Record // nil when no document loaded
+	cfg          Config
+	mu           sync.RWMutex
+	record       *v1.Record // nil when no document loaded
+	shuttingDown atomic.Bool
 }
 
 // New creates a new Server. Record may be nil to start without a document.
@@ -64,6 +66,8 @@ func (s *Server) Run(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
+		s.shuttingDown.Store(true)
+		time.Sleep(2 * time.Second) // let any LB stop routing
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(shutdownCtx)
@@ -144,6 +148,11 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
+	if s.shuttingDown.Load() {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte("shutting down"))
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok"))
 }
