@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/alma-sm.png" alt="alma" width="200">
+</p>
+
 # alma
 
 **AL**ignment **MA**trix. A declarative tool for structured design decisions.

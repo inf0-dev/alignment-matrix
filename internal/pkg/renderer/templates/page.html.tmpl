@@ -4,10 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .Model.Schema.Title }}</title>
+  <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="shortcut icon" href="/assets/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <link rel="manifest" href="/assets/site.webmanifest">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plaster&display=swap">
   <style>{{ .CSS }}</style>
 </head>
 <body>
   <header class="page-header">
+    <div class="alma-logo" style="font-family:'Plaster',sans-serif" aria-label="alma"><span class="alma-a1">a</span><span class="alma-l">l</span><span class="alma-m">m</span><span class="alma-a2">a</span></div>
     <div class="header-row">
       <h1>{{ .Model.Schema.Title }}</h1>
       <div class="header-actions">
@@ -150,7 +157,7 @@
   </details>
 
   <footer class="page-footer">
-    Built with <a href="https://github.com/inf0-dev/alma" target="_blank" rel="noopener">alma</a> by <a href="https://github.com/inf0-dev" target="_blank" rel="noopener">inf0-dev</a>
+    Built with <a class="alma-link" href="https://github.com/inf0-dev/alma" target="_blank" rel="noopener">alma</a> by <a href="https://github.com/inf0-dev" target="_blank" rel="noopener">inf0-dev</a>
   </footer>
 
   <script id="data-requirements" type="application/json">{{ .RequirementsJSON }}</script>

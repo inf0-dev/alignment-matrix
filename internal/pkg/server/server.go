@@ -24,8 +24,8 @@ import (
 //go:embed templates/upload.html.tmpl
 var uploadPage string
 
-//go:embed templates/*
-var _ embed.FS
+//go:embed assets/*
+var assetsFS embed.FS
 
 // Config holds the server configuration.
 type Config struct {
@@ -55,10 +55,11 @@ func (s *Server) Run(ctx context.Context) error {
 	mux.HandleFunc("/upload", s.handleUpload)
 	mux.HandleFunc("/export", s.handleExport)
 	mux.HandleFunc("/state", s.handleState)
+	mux.Handle("/assets/", http.FileServer(http.FS(assetsFS)))
 	mux.HandleFunc("/", s.handlePage)
 
 	srv := &http.Server{
-		Handler: mux,
+		Handler: withCSP(mux),
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
@@ -296,4 +297,20 @@ func parseUpload(data []byte, filename string) (*v1.Record, error) {
 	default:
 		return nil, fmt.Errorf("invalid type: %s", docType)
 	}
+}
+
+func withCSP(next http.Handler) http.Handler {
+	csp := strings.Join([]string{
+		"default-src 'none'",
+		"style-src 'unsafe-inline' https://fonts.googleapis.com",
+		"font-src https://fonts.gstatic.com",
+		"img-src 'self'",
+		"script-src 'unsafe-inline'",
+		"connect-src 'self'",
+		"form-action 'self'",
+	}, "; ")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Security-Policy", csp)
+		next.ServeHTTP(w, r)
+	})
 }

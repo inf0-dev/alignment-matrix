@@ -55,4 +55,4 @@ serve:
     @ go run ./app/cli serve
 
 build:
-    @ go build -o {{ out_dir }}/alma ./app/cli
+    @ go build -ldflags="-s -w" -o {{ out_dir }}/alma ./app/cli

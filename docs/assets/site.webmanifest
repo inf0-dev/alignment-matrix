@@ -1,0 +1,21 @@
+{
+  "name": "Alignment Matrix",
+  "short_name": "ALMA",
+  "icons": [
+    {
+      "src": "/assets/web-app-manifest-192x192.png?v=2026.10.02",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/web-app-manifest-512x512.png?v=2026.10.02",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "theme_color": "#fefefe",
+  "background_color": "#fefefe",
+  "display": "standalone"
+}

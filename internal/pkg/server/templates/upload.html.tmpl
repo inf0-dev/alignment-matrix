@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>alma</title>
+  <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="shortcut icon" href="/assets/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <link rel="manifest" href="/assets/site.webmanifest">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plaster&display=swap">
   <style>
     :root {
       --bg: #fafafa;
@@ -11,31 +17,31 @@
       --border: #e8e8e8;
       --text: #1a1a1a;
       --text-secondary: #555555;
-      --accent: #1d4ed8;
-      --accent-soft: #eff4ff;
+      --accent: #009ACA;
+      --accent-soft: #e6f6fc;
       --radius: 10px;
       --shadow-md: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
     }
 
     [data-theme="dark"] {
-      --bg: #161616;
-      --surface: #1e1e1e;
-      --border: #333333;
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --border: #2a2a2a;
       --text: #e5e5e5;
       --text-secondary: #a0a0a0;
-      --accent: #60a5fa;
-      --accent-soft: #1e293b;
+      --accent: #33b5e0;
+      --accent-soft: #0d2a38;
     }
 
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
-        --bg: #161616;
-        --surface: #1e1e1e;
-        --border: #333333;
+        --bg: #0f0f0f;
+        --surface: #1a1a1a;
+        --border: #2a2a2a;
         --text: #e5e5e5;
         --text-secondary: #a0a0a0;
-        --accent: #60a5fa;
-        --accent-soft: #1e293b;
+        --accent: #33b5e0;
+        --accent-soft: #0d2a38;
       }
     }
 
@@ -65,6 +71,25 @@
       font-size: 1.5rem;
       margin-bottom: 0.5rem;
     }
+
+    .alma-logo {
+      font-family: 'Plaster', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      user-select: none;
+    }
+    .alma-logo > span {
+      display: inline-block;
+      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .alma-logo > span:hover {
+      transform: scale(1.1);
+    }
+    .alma-a1 { color: #009aca; }
+    .alma-l  { color: #00da3f; }
+    .alma-m  { color: #ff9c00; }
+    .alma-a2 { color: #ff007b; }
 
     .subtitle {
       color: var(--text-secondary);
@@ -142,11 +167,23 @@
     .page-footer a:hover {
       text-decoration: underline;
     }
+    .page-footer .alma-link:hover {
+      background: linear-gradient(90deg, #009aca, #00da3f, #ff9c00, #ff007b, #009aca);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+      animation: alma-gradient 2s linear infinite;
+    }
+    @keyframes alma-gradient {
+      to { background-position: -200% 0; }
+    }
   </style>
 </head>
 <body>
   <div class="upload-container">
-    <h1>alma</h1>
+    <h1 class="alma-logo"><span class="alma-a1">a</span><span class="alma-l">l</span><span class="alma-m">m</span><span class="alma-a2">a</span></h1>
     <p class="subtitle">Upload a document or record to get started</p>
 
     <div class="drop-zone" id="drop-zone">
@@ -163,7 +200,7 @@
   </div>
 
   <footer class="page-footer">
-    Built with <a href="https://github.com/inf0-dev/alma" target="_blank" rel="noopener">alma</a> by <a href="https://github.com/inf0-dev" target="_blank" rel="noopener">inf0-dev</a>
+    Built with <a class="alma-link" href="https://github.com/inf0-dev/alma" target="_blank" rel="noopener">alma</a> by <a href="https://github.com/inf0-dev" target="_blank" rel="noopener">inf0-dev</a>
   </footer>
 
   <script>
