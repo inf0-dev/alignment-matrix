@@ -42,10 +42,14 @@ a11y: demo
 # render demo HTML and open in browser
 demo:
     {{ init_dir_ine(out_dir) }}
-    @ go run ./app/cli render -p internal/pkg/renderer/testdata/demo.yaml -t record -o {{ out_dir }}/demo.html
+    @ go run ./app/cli render -p internal/pkg/renderer/testdata/demo.yaml -o {{ out_dir }}/demo.html
     @ open {{ out_dir }}/demo.html
 
 # update golden files for integration tests
 update_golden:
     @ go test -tags=integration ./internal/pkg/exporter/ -update
     @ go test -tags=integration ./internal/pkg/renderer/ -update
+
+# run the server
+serve:
+    @ go run ./app/cli serve

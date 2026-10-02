@@ -18,6 +18,33 @@ func Evaluate(doc *v1.Document, requirements []v1.RecordRequirement, items []v1.
 		return nil, fmt.Errorf("failed to compute SHA256: %w", err)
 	}
 
+	// Seed requirements from schema if none provided
+	if requirements == nil {
+		requirements = make([]v1.RecordRequirement, 0, len(doc.Schema.Requirements))
+		for _, r := range doc.Schema.Requirements {
+			requirements = append(requirements, v1.RecordRequirement{
+				ID:      r.ID,
+				IsHard:  r.IsHard,
+				Checked: false,
+			})
+		}
+	}
+
+	// Seed items from schema if none provided
+	if items == nil {
+		items = make([]v1.RecordItem, 0, len(doc.Schema.Items))
+		for _, item := range doc.Schema.Items {
+			ri := v1.RecordItem{
+				ID:   item.ID,
+				Kind: item.Kind,
+			}
+			if item.Kind == v1.KindNumber && item.NumberConfig != nil {
+				ri.Unit = item.NumberConfig.Unit
+			}
+			items = append(items, ri)
+		}
+	}
+
 	checkedReqs := make(map[string]bool)
 	for _, r := range requirements {
 		checkedReqs[r.ID] = r.Checked
