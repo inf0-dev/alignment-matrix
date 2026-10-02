@@ -1099,7 +1099,7 @@ textarea::placeholder {
   </details>
 
   <footer class="page-footer">
-    Built with <a href="https://github.com/inf0-dev/alignment-matrix" target="_blank" rel="noopener">alignment-matrix</a> by <a href="https://github.com/inf0-dev" target="_blank" rel="noopener">inf0-dev</a>
+    Built with <a href="https://github.com/inf0-dev/alma" target="_blank" rel="noopener">alma</a> by <a href="https://github.com/inf0-dev" target="_blank" rel="noopener">inf0-dev</a>
   </footer>
 
   <script id="data-requirements" type="application/json">[{"id":"req-latency","is_hard":true,"checked":true},{"id":"req-budget","is_hard":true,"checked":true},{"id":"req-ha","is_hard":true,"checked":true},{"id":"req-observability","is_hard":false,"checked":true},{"id":"req-team-skill","is_hard":false,"checked":false},{"id":"req-encryption","is_hard":true,"checked":true},{"id":"req-backup","is_hard":false,"checked":true},{"id":"req-compliance","is_hard":true,"checked":true},{"id":"req-migration","is_hard":false,"checked":false},{"id":"req-multitenancy","is_hard":false,"checked":true}]</script>

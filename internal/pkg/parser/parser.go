@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
+	v1 "github.com/inf0-dev/alma/api/v1"
 	"go.yaml.in/yaml/v4"
 )
 

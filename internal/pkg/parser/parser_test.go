@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/parser"
-	"github.com/inf0-dev/alignment-matrix/internal/testutil"
+	v1 "github.com/inf0-dev/alma/api/v1"
+	"github.com/inf0-dev/alma/internal/pkg/parser"
+	"github.com/inf0-dev/alma/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

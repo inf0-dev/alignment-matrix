@@ -14,10 +14,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/engine"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/parser"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/renderer"
+	v1 "github.com/inf0-dev/alma/api/v1"
+	"github.com/inf0-dev/alma/internal/pkg/engine"
+	"github.com/inf0-dev/alma/internal/pkg/parser"
+	"github.com/inf0-dev/alma/internal/pkg/renderer"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -32,7 +32,7 @@ type Config struct {
 	Addr string
 }
 
-// Server serves an alignment matrix record as an interactive HTML page.
+// Server serves an alma record as an interactive HTML page.
 type Server struct {
 	cfg          Config
 	mu           sync.RWMutex

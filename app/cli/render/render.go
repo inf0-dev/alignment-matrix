@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/engine"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/parser"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/renderer"
+	v1 "github.com/inf0-dev/alma/api/v1"
+	"github.com/inf0-dev/alma/internal/pkg/engine"
+	"github.com/inf0-dev/alma/internal/pkg/parser"
+	"github.com/inf0-dev/alma/internal/pkg/renderer"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ func NewRenderCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "render",
-		Short: "Render the alignment matrix to a self-contained HTML file",
+		Short: "Render an alma document to a self-contained HTML file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rec, err := loadAndParse(path)
 			if err != nil {

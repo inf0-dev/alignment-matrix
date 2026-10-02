@@ -1,4 +1,4 @@
-# Alignment Matrix
+# alma (ALignment MAtrix)
 
 A quick way to align on a design based on a set of requirements.
 

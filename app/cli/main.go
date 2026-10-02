@@ -5,17 +5,17 @@ import (
 	"os"
 
 	"github.com/charmbracelet/fang"
-	"github.com/inf0-dev/alignment-matrix/app/cli/export"
-	"github.com/inf0-dev/alignment-matrix/app/cli/render"
-	"github.com/inf0-dev/alignment-matrix/app/cli/serve"
-	"github.com/inf0-dev/alignment-matrix/app/cli/validate"
+	"github.com/inf0-dev/alma/app/cli/export"
+	"github.com/inf0-dev/alma/app/cli/render"
+	"github.com/inf0-dev/alma/app/cli/serve"
+	"github.com/inf0-dev/alma/app/cli/validate"
 	"github.com/spf13/cobra"
 )
 
 func main() {
 	cmd := &cobra.Command{
-		Use:   "align",
-		Short: "Alignment Matrix CLI",
+		Use:   "alma",
+		Short: "alma — alignment matrix CLI",
 	}
 
 	cmd.AddCommand(

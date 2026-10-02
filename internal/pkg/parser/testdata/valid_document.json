@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "version": "alignment-matrix/v1"
+    "version": "alma/v1"
   },
   "schema": {
     "title": "Test Schema",

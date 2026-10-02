@@ -2,40 +2,49 @@ package validate
 
 import (
 	"fmt"
-	"strings"
+	"os"
 
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/parser"
+	"github.com/inf0-dev/alma/internal/pkg/parser"
 	"github.com/spf13/cobra"
 )
 
 func NewValidateCommand() *cobra.Command {
 	var path string
-	var doc_type = "document"
 
 	cmd := &cobra.Command{
 		Use:   "validate",
-		Short: "Validate the alignment matrix",
-		Long:  "Validate the alignment matrix for issues and report them to the user.",
+		Short: "Validate an alma document",
+		Long:  "Validate an alma document or record for issues and report them to the user.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			switch strings.ToLower(doc_type) {
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("failed to read file: %w", err)
+			}
+
+			docType, err := parser.DetectType(data, path)
+			if err != nil {
+				return err
+			}
+
+			switch docType {
 			case "document":
-				doc, err := parser.ReadDocument(path)
+				doc, err := parser.ParseDocument(data, path)
 				if err != nil {
-					return fmt.Errorf("failed to read document: %v", err)
+					return fmt.Errorf("failed to parse document: %w", err)
 				}
 				if err := doc.Validate(); err != nil {
-					return fmt.Errorf("document validation failed: %v", err)
+					return fmt.Errorf("document validation failed: %w", err)
 				}
 			case "record":
-				record, err := parser.ReadRecord(path)
+				rec, err := parser.ParseRecord(data, path)
 				if err != nil {
-					return fmt.Errorf("failed to read record: %v", err)
+					return fmt.Errorf("failed to parse record: %w", err)
 				}
-				if err := record.Validate(); err != nil {
-					return fmt.Errorf("record validation failed: %v", err)
+				if err := rec.Validate(); err != nil {
+					return fmt.Errorf("record validation failed: %w", err)
 				}
 			default:
-				return fmt.Errorf("invalid type: %s. Must be one of: [document, record] (case-insensitive)", doc_type)
+				return fmt.Errorf("unrecognized type: %s", docType)
 			}
 
 			cmd.Println("Valid!")
@@ -43,9 +52,8 @@ func NewValidateCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&path, "path", "p", "", "Path to the alignment matrix file")
+	cmd.Flags().StringVarP(&path, "path", "p", "", "Path to the alma file")
 	_ = cmd.MarkFlagRequired("path")
-	cmd.Flags().StringVarP(&doc_type, "type", "t", "", "Type of the alignment matrix file, one of: [document, record] (case-insensitive). Default is document, if unset.")
 
 	return cmd
 }

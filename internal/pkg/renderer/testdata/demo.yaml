@@ -1,7 +1,7 @@
-version: "alignment-matrix/record/v1"
+version: "alma/record/v1"
 model:
   metadata:
-    version: "alignment-matrix/v1"
+    version: "alma/v1"
     attendees:
       - Alice
       - Bob

@@ -1,7 +1,7 @@
 package v1
 
 // RecordVersionV1 is the version string for the v1 record schema.
-const RecordVersionV1 = "alignment-matrix/record/v1"
+const RecordVersionV1 = "alma/record/v1"
 
 // OptionStatus represents the derived status of a design option in the record.
 type OptionStatus string
@@ -107,7 +107,7 @@ type HistoryEntry struct {
 	ModelSHA256 string `json:"model_sha256" yaml:"model_sha256"`
 }
 
-// Record is the decision record — the output of an alignment matrix session.
+// Record is the decision record: the output of an alma session.
 // It embeds the full input model so one file is enough to reopen a decision.
 type Record struct {
 	// Version is the record schema version.

@@ -8,7 +8,7 @@ import (
 	"html/template"
 	"strings"
 
-	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
+	v1 "github.com/inf0-dev/alma/api/v1"
 )
 
 //go:embed templates/page.html.tmpl

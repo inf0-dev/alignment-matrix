@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/exporter"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/parser"
+	v1 "github.com/inf0-dev/alma/api/v1"
+	"github.com/inf0-dev/alma/internal/pkg/exporter"
+	"github.com/inf0-dev/alma/internal/pkg/parser"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v4"
 )
@@ -18,7 +18,7 @@ func NewExportCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "export",
 		Short: "Export a record to stdout in the given format",
-		Long:  "Read an alignment matrix record and export it to stdout as markdown, JSON, or YAML.",
+		Long:  "Read an alma record and export it to stdout as markdown, JSON, or YAML.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			record, err := parser.ReadRecord(path)
 			if err != nil {

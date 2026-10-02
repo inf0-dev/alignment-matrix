@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/exporter"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/parser"
+	"github.com/inf0-dev/alma/internal/pkg/exporter"
+	"github.com/inf0-dev/alma/internal/pkg/parser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -1,9 +1,9 @@
 package v1
 
 // VersionV1 is the version string for the v1 schema.
-const VersionV1 = "alignment-matrix/v1"
+const VersionV1 = "alma/v1"
 
-// Requirement represents a single requirement in the alignment matrix.
+// Requirement represents a single requirement in the alma.
 type Requirement struct {
 	// ID is the unique identifier as a string for the requirement.
 	ID string `json:"id" yaml:"id"`
@@ -16,16 +16,16 @@ type Requirement struct {
 type Kind string
 
 const (
-	// KindChoice represents a choice item in the alignment matrix. These have a direct effect on design options available.
+	// KindChoice represents a choice item in the alma. These have a direct effect on design options available.
 	KindChoice Kind = "choice"
-	// KindText represents a text item in the alignment matrix. These are used for tracking and do not affect design options (no easy way to define "S text means option X is not possible").
+	// KindText represents a text item in the alma. These are used for tracking and do not affect design options (no easy way to define "S text means option X is not possible").
 	KindText Kind = "text"
-	// KindNumber represents a number item in the alignment matrix. These are used for tracking and do not affect design options (no easy way to define "S number means option X is not possible").
+	// KindNumber represents a number item in the alma. These are used for tracking and do not affect design options (no easy way to define "S number means option X is not possible").
 	// In the future, there may be a way do define conditions for number items (e.g. "if {number} > {value}".)
 	KindNumber Kind = "number"
 )
 
-// ChoiceOption represents a single option for a Choice item in the alignment matrix.
+// ChoiceOption represents a single option for a Choice item in the alma.
 type ChoiceOption struct {
 	// ID is the unique identifier as a string for the choice option.
 	ID string `json:"id" yaml:"id"`
@@ -43,7 +43,7 @@ type NumberConfig struct {
 	Max *int `json:"max,omitempty" yaml:"max,omitempty"`
 }
 
-// Item represents a single item in the alignment matrix.
+// Item represents a single item in the alma.
 type Item struct {
 	// ID is the unique identifier as a string for the item.
 	ID string `json:"id" yaml:"id"`
@@ -120,7 +120,7 @@ type DesignOption struct {
 	Cons []string `json:"cons,omitempty" yaml:"cons,omitempty"`
 }
 
-// Metadata holds document-level information about the alignment matrix session.
+// Metadata holds document-level information about the alma session.
 type Metadata struct {
 	// Version is the schema version. Must match a known version constant (e.g. VersionV1) to select the correct parser/validator.
 	Version string `json:"version" yaml:"version"`
@@ -130,26 +130,26 @@ type Metadata struct {
 	Date string `json:"date,omitempty" yaml:"date,omitempty"`
 }
 
-// Schema represents the schema for the alignment matrix API's inputs.
+// Schema represents the schema for the alma API's inputs.
 type Schema struct {
-	// Title is the title of the alignment matrix (e.g., "Alignment Matrix for Project X").
+	// Title is the title of the alma (e.g., "alma for Project X").
 	Title string `json:"title" yaml:"title"`
 	// Issue is the Git issue link associated with the alignment, used for extra display purposes, only the validity of the URL is validated (if set).
 	Issue string `json:"issue,omitempty" yaml:"issue,omitempty"`
 	// Categories is an optional list of valid category names. When set, every DesignOption Effect.Category must be in this list.
 	Categories []string `json:"categories,omitempty" yaml:"categories,omitempty"`
-	// Requirements is a list of requirements that the alignment matrix will evaluate.
+	// Requirements is a list of requirements that the alma will evaluate.
 	Requirements []Requirement `json:"requirements,omitempty" yaml:"requirements,omitempty"`
-	// Items is a list of items that the alignment matrix will evaluate.
+	// Items is a list of items that the alma will evaluate.
 	Items []Item `json:"items,omitempty" yaml:"items,omitempty"`
-	// DesignOptions is a list of design options that the alignment matrix will evaluate.
+	// DesignOptions is a list of design options that the alma will evaluate.
 	DesignOptions []DesignOption `json:"design_options,omitempty" yaml:"design_options,omitempty"`
 }
 
-// Document is the top-level container for an alignment matrix, combining metadata with the schema definition.
+// Document is the top-level container for an alma, combining metadata with the schema definition.
 type Document struct {
 	// Metadata holds document-level information (version, attendees, date).
 	Metadata Metadata `json:"metadata" yaml:"metadata"`
-	// Schema defines the alignment matrix structure (requirements, items, design options).
+	// Schema defines the alma structure (requirements, items, design options).
 	Schema Schema `json:"schema" yaml:"schema"`
 }

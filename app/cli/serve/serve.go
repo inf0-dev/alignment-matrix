@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/engine"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/parser"
-	"github.com/inf0-dev/alignment-matrix/internal/pkg/server"
+	v1 "github.com/inf0-dev/alma/api/v1"
+	"github.com/inf0-dev/alma/internal/pkg/engine"
+	"github.com/inf0-dev/alma/internal/pkg/parser"
+	"github.com/inf0-dev/alma/internal/pkg/server"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ func NewServeCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "serve",
-		Short: "Serve the alignment matrix as a web application",
+		Short: "Serve alma as a web application",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var rec *v1.Record
 			if path != "" {

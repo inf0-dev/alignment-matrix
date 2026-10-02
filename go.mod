@@ -1,4 +1,4 @@
-module github.com/inf0-dev/alignment-matrix
+module github.com/inf0-dev/alma
 
 go 1.27.1
 
