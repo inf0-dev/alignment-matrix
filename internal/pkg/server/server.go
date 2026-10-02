@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	v1 "github.com/inf0-dev/alignment-matrix/api/v1"
 	"github.com/inf0-dev/alignment-matrix/internal/pkg/engine"
@@ -63,7 +64,9 @@ func (s *Server) Run(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
-		_ = srv.Close()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx)
 	}()
 
 	log.Printf("Serving on http://%s", ln.Addr())
@@ -86,7 +89,7 @@ func (s *Server) handlePage(w http.ResponseWriter, r *http.Request) {
 
 	if rec == nil {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte(uploadPage))
+		_, _ = w.Write([]byte(uploadPage))
 		return
 	}
 
@@ -97,7 +100,7 @@ func (s *Server) handlePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(html))
+	_, _ = w.Write([]byte(html))
 }
 
 func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +122,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing file", http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	data, err := io.ReadAll(file)
 	if err != nil {

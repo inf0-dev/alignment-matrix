@@ -30,7 +30,7 @@ func NewRenderCommand() *cobra.Command {
 			}
 
 			if output == "" {
-				fmt.Fprint(cmd.OutOrStdout(), html)
+				_, _ = fmt.Fprint(cmd.OutOrStdout(), html)
 				return nil
 			}
 
