@@ -29,7 +29,7 @@
     </summary>
     <div class="requirements">
       {{ range .Requirements -}}
-      <button type="button" class="req{{ if .Checked }} active{{ end }}" data-id="{{ .ID }}">
+      <button type="button" class="req{{ if .Checked }} active{{ end }}" data-id="{{ .ID }}" aria-pressed="{{ if .Checked }}true{{ else }}false{{ end }}">
         {{ requirementDesc $.Model .ID }}
         <span class="req-type">{{ if .IsHard }}hard{{ else }}soft{{ end }}</span>
       </button>
@@ -51,16 +51,16 @@
         {{ if eq (string .Kind) "choice" -}}
         <div class="choices">
           {{ range $item.ChoiceOptions -}}
-          <button type="button" class="choice{{ if eq (derefOr $.Items $item.ID) .ID }} selected{{ end }}" data-item="{{ $item.ID }}" data-answer="{{ .ID }}">{{ .Description }}</button>
+          <button type="button" class="choice{{ if eq (derefOr $.Items $item.ID) .ID }} selected{{ end }}" data-item="{{ $item.ID }}" data-answer="{{ .ID }}" aria-pressed="{{ if eq (derefOr $.Items $item.ID) .ID }}true{{ else }}false{{ end }}">{{ .Description }}</button>
           {{ end }}
         </div>
         {{ else if eq (string .Kind) "number" -}}
-        <input type="number" class="item-input" data-item="{{ $item.ID }}"
+        <input type="number" class="item-input" data-item="{{ $item.ID }}" aria-label="{{ $item.Description }}"
           {{ if $item.NumberConfig }}{{ if $item.NumberConfig.Min }}min="{{ derefInt $item.NumberConfig.Min }}"{{ end }} {{ if $item.NumberConfig.Max }}max="{{ derefInt $item.NumberConfig.Max }}"{{ end }}{{ end }}
           {{ if .Value }}value="{{ .Value }}"{{ end }}
           {{ if .Unit }}placeholder="{{ .Unit }}"{{ end }}>
         {{ else -}}
-        <textarea class="item-input" data-item="{{ $item.ID }}" placeholder="Enter text...">{{ if .Value }}{{ .Value }}{{ end }}</textarea>
+        <textarea class="item-input" data-item="{{ $item.ID }}" aria-label="{{ $item.Description }}" placeholder="Enter text...">{{ if .Value }}{{ .Value }}{{ end }}</textarea>
         {{ end }}
       </div>
       {{ end }}
@@ -76,7 +76,7 @@
       <div class="options-list">
         {{ range .Options -}}
         {{ $opt := schemaOption $.Model .ID -}}
-        <button type="button" class="option-list-item {{ .Status }}{{ if eq (index $.Options 0).ID .ID }} active{{ end }}" data-option-id="{{ .ID }}">
+        <button type="button" class="option-list-item {{ .Status }}{{ if eq (index $.Options 0).ID .ID }} active{{ end }}" data-option-id="{{ .ID }}" {{ if eq (index $.Options 0).ID .ID }}aria-current="true"{{ end }}>
           <div class="option-list-header">
             <span class="option-title">{{ $opt.Title }}</span>
             <span class="option-status {{ .Status }}">{{ .Status }}</span>
@@ -84,7 +84,7 @@
           <div class="req-grid" data-option="{{ .ID }}">
             <div class="req-grid-cells">
               {{ range reqGridCells $.Model .ID -}}
-              <div class="req-cell {{ .Status }}" title="{{ .Desc }} ({{ .Type }}) — {{ .Status }}" data-req="{{ .ID }}"></div>
+              <div class="req-cell {{ .Status }}" title="{{ .Desc }} ({{ .Type }}) — {{ .Status }}" data-req="{{ .ID }}" role="img" aria-label="{{ .Desc }}: {{ .Status }}"></div>
               {{ end }}
             </div>
             <span class="req-grid-label">{{ .Meets.Hard.Met }}/{{ .Meets.Hard.Of }} hard · {{ .Meets.Soft.Met }}/{{ .Meets.Soft.Of }} soft</span>

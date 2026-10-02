@@ -34,6 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (state.requirements[i].id === id) {
           state.requirements[i].checked = !state.requirements[i].checked;
           this.classList.toggle("active", state.requirements[i].checked);
+          this.setAttribute("aria-pressed", state.requirements[i].checked);
           break;
         }
       }
@@ -58,8 +59,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
 
+      var currentAnswer = (state.items.find(function (it) { return it.id === itemId; }) || {}).answer;
       document.querySelectorAll('.choice[data-item="' + itemId + '"]').forEach(function (b) {
-        b.classList.toggle("selected", b.dataset.answer === (state.items.find(function (it) { return it.id === itemId; }) || {}).answer);
+        var isSelected = b.dataset.answer === currentAnswer;
+        b.classList.toggle("selected", isSelected);
+        b.setAttribute("aria-pressed", isSelected);
       });
 
       evaluate();
@@ -88,7 +92,10 @@ document.addEventListener("DOMContentLoaded", function () {
     btn.addEventListener("click", function () {
       var optId = this.dataset.optionId;
       document.querySelectorAll(".option-list-item").forEach(function (b) {
-        b.classList.toggle("active", b.dataset.optionId === optId);
+        var isCurrent = b.dataset.optionId === optId;
+        b.classList.toggle("active", isCurrent);
+        if (isCurrent) { b.setAttribute("aria-current", "true"); }
+        else { b.removeAttribute("aria-current"); }
       });
       document.querySelectorAll(".option-detail-panel").forEach(function (p) {
         p.classList.toggle("active", p.id === "option-" + optId);

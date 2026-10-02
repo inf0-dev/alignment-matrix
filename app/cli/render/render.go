@@ -20,37 +20,38 @@ func NewRenderCommand() *cobra.Command {
 		Short: "Render the alignment matrix to a self-contained HTML file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var html string
-			var err error
 
 			switch docType {
 			case "document":
-				doc, err := parser.ReadDocument(path)
-				if err != nil {
-					return fmt.Errorf("failed to read document: %w", err)
+				doc, parseErr := parser.ReadDocument(path)
+				if parseErr != nil {
+					return fmt.Errorf("failed to read document: %w", parseErr)
 				}
-				if err := doc.Validate(); err != nil {
-					return fmt.Errorf("validation failed: %w", err)
+				if valErr := doc.Validate(); valErr != nil {
+					return fmt.Errorf("validation failed: %w", valErr)
 				}
-				rec, err := engine.Evaluate(doc, nil, nil)
-				if err != nil {
-					return fmt.Errorf("evaluation failed: %w", err)
+				rec, evalErr := engine.Evaluate(doc, nil, nil)
+				if evalErr != nil {
+					return fmt.Errorf("evaluation failed: %w", evalErr)
 				}
-				html, err = renderer.HTML(rec)
-				if err != nil {
-					return fmt.Errorf("render failed: %w", err)
+				out, renderErr := renderer.HTML(rec)
+				if renderErr != nil {
+					return fmt.Errorf("render failed: %w", renderErr)
 				}
+				html = out
 			case "record":
-				rec, err := parser.ReadRecord(path)
-				if err != nil {
-					return fmt.Errorf("failed to read record: %w", err)
+				rec, parseErr := parser.ReadRecord(path)
+				if parseErr != nil {
+					return fmt.Errorf("failed to read record: %w", parseErr)
 				}
-				if err := rec.Validate(); err != nil {
-					return fmt.Errorf("validation failed: %w", err)
+				if valErr := rec.Validate(); valErr != nil {
+					return fmt.Errorf("validation failed: %w", valErr)
 				}
-				html, err = renderer.HTML(rec)
-				if err != nil {
-					return fmt.Errorf("render failed: %w", err)
+				out, renderErr := renderer.HTML(rec)
+				if renderErr != nil {
+					return fmt.Errorf("render failed: %w", renderErr)
 				}
+				html = out
 			default:
 				return fmt.Errorf("invalid type: %s. Must be one of: [document, record]", docType)
 			}
@@ -60,7 +61,7 @@ func NewRenderCommand() *cobra.Command {
 				return nil
 			}
 
-			if err = os.WriteFile(output, []byte(html), 0644); err != nil {
+			if err := os.WriteFile(output, []byte(html), 0644); err != nil {
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 			cmd.Printf("Rendered to %s\n", output)
