@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -53,6 +54,7 @@ func (s *Server) Run(ctx context.Context) error {
 	mux.HandleFunc("/healthz", s.handleHealthz)
 	mux.HandleFunc("/upload", s.handleUpload)
 	mux.HandleFunc("/export", s.handleExport)
+	mux.HandleFunc("/state", s.handleState)
 	mux.HandleFunc("/", s.handlePage)
 
 	srv := &http.Server{
@@ -176,6 +178,67 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/x-yaml")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 	_, _ = w.Write(data)
+}
+
+type statePayload struct {
+	Requirements []v1.RecordRequirement `json:"requirements"`
+	Items        []v1.RecordItem        `json:"items"`
+}
+
+func (s *Server) handleState(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	s.mu.RLock()
+	rec := s.record
+	s.mu.RUnlock()
+
+	if rec == nil {
+		http.Error(w, "no document loaded", http.StatusNotFound)
+		return
+	}
+
+	var payload statePayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		s.respondStateError(w, rec, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	updated, err := engine.Evaluate(&rec.Model, payload.Requirements, payload.Items)
+	if err != nil {
+		s.respondStateError(w, rec, "evaluate failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Preserve fields not recomputed by Evaluate
+	updated.Final = rec.Final
+	updated.History = rec.History
+	updated.Present = rec.Present
+	updated.DecidedOn = rec.DecidedOn
+
+	s.mu.Lock()
+	s.record = updated
+	s.mu.Unlock()
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+type stateErrorResponse struct {
+	Error        string                 `json:"error"`
+	Requirements []v1.RecordRequirement `json:"requirements"`
+	Items        []v1.RecordItem        `json:"items"`
+}
+
+func (s *Server) respondStateError(w http.ResponseWriter, rec *v1.Record, msg string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(stateErrorResponse{
+		Error:        msg,
+		Requirements: rec.Requirements,
+		Items:        rec.Items,
+	})
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {

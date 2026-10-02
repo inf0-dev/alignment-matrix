@@ -671,6 +671,27 @@ textarea::placeholder {
     display: block;
 }
 
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(1rem);
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger-border);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 1000;
+}
+.toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 /* Footer */
 .page-footer {
     margin-top: 3rem;
@@ -1112,68 +1133,47 @@ document.addEventListener("DOMContentLoaded", function () {
     schema: JSON.parse(document.getElementById("data-schema").textContent),
   };
 
-  // Bind requirement buttons (click to toggle)
+  // --- Event handlers: mutate state, then render ---
+
   document.querySelectorAll(".req").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var id = this.dataset.id;
-      for (var i = 0; i < state.requirements.length; i++) {
-        if (state.requirements[i].id === id) {
-          state.requirements[i].checked = !state.requirements[i].checked;
-          this.classList.toggle("active", state.requirements[i].checked);
-          this.setAttribute("aria-pressed", state.requirements[i].checked);
-          break;
-        }
-      }
-      evaluate();
+      var r = state.requirements.find(function (req) { return req.id === id; });
+      if (r) r.checked = !r.checked;
+      render();
+      syncState(0);
     });
   });
 
-  // Bind choice buttons
   document.querySelectorAll(".choice").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var itemId = this.dataset.item;
       var answerId = this.dataset.answer;
-
-      for (var i = 0; i < state.items.length; i++) {
-        if (state.items[i].id === itemId) {
-          if (state.items[i].answer === answerId) {
-            state.items[i].answer = null;
-          } else {
-            state.items[i].answer = answerId;
-          }
-          break;
-        }
+      var item = state.items.find(function (it) { return it.id === itemId; });
+      if (item) {
+        item.answer = item.answer === answerId ? null : answerId;
       }
-
-      var currentAnswer = (state.items.find(function (it) { return it.id === itemId; }) || {}).answer;
-      document.querySelectorAll('.choice[data-item="' + itemId + '"]').forEach(function (b) {
-        var isSelected = b.dataset.answer === currentAnswer;
-        b.classList.toggle("selected", isSelected);
-        b.setAttribute("aria-pressed", isSelected);
-      });
-
-      evaluate();
+      render();
+      syncState(0);
     });
   });
 
-  // Bind number/text inputs
   document.querySelectorAll(".item-input").forEach(function (input) {
     input.addEventListener("input", function () {
       var itemId = this.dataset.item;
-      for (var i = 0; i < state.items.length; i++) {
-        if (state.items[i].id === itemId) {
-          if (this.type === "number") {
-            state.items[i].value = this.value === "" ? null : Number(this.value);
-          } else {
-            state.items[i].value = this.value || null;
-          }
-          break;
+      var item = state.items.find(function (it) { return it.id === itemId; });
+      if (item) {
+        if (this.type === "number") {
+          item.value = this.value === "" ? null : Number(this.value);
+        } else {
+          item.value = this.value || null;
         }
       }
+      syncState(500);
     });
   });
 
-  // Bind option list items (master-detail selection)
+  // Option list selection (master-detail, UI-only — no state sync needed)
   document.querySelectorAll(".option-list-item").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var optId = this.dataset.optionId;
@@ -1189,7 +1189,36 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  function evaluate() {
+  // --- Render: sync ALL UI from state ---
+
+  function render() {
+    // Sync requirement buttons
+    document.querySelectorAll(".req").forEach(function (btn) {
+      var r = state.requirements.find(function (req) { return req.id === btn.dataset.id; });
+      if (r) {
+        btn.classList.toggle("active", r.checked);
+        btn.setAttribute("aria-pressed", r.checked);
+      }
+    });
+
+    // Sync choice buttons
+    document.querySelectorAll(".choice").forEach(function (btn) {
+      var item = state.items.find(function (it) { return it.id === btn.dataset.item; });
+      var isSelected = item && item.answer === btn.dataset.answer;
+      btn.classList.toggle("selected", isSelected);
+      btn.setAttribute("aria-pressed", isSelected);
+    });
+
+    // Sync text/number inputs (skip if focused to avoid clobbering mid-type)
+    document.querySelectorAll(".item-input").forEach(function (input) {
+      if (document.activeElement === input) return;
+      var item = state.items.find(function (it) { return it.id === input.dataset.item; });
+      if (item) {
+        input.value = item.value != null ? item.value : "";
+      }
+    });
+
+    // Evaluate design options
     var checkedReqs = {};
     state.requirements.forEach(function (r) { checkedReqs[r.id] = r.checked; });
 
@@ -1223,14 +1252,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       });
 
-      // Check blocks
       var firedBlocks = [];
       (opt.blocks || []).forEach(function (block) {
         var allMatch = block.condition.every(function (key) { return activeKeys[key]; });
         if (allMatch) { firedBlocks.push(block.reason); }
       });
 
-      // Collect effects
       var effects = [];
       Object.keys(opt.effects || {}).forEach(function (key) {
         if (!activeKeys[key]) return;
@@ -1243,22 +1270,20 @@ document.addEventListener("DOMContentLoaded", function () {
         });
       });
 
-      // Determine status
-      var status;
-      if (failedReqs.length > 0) { status = "eliminated"; }
-      else if (firedBlocks.length > 0) { status = "blocked"; }
-      else { status = "possible"; }
+      var optStatus;
+      if (failedReqs.length > 0) { optStatus = "eliminated"; }
+      else if (firedBlocks.length > 0) { optStatus = "blocked"; }
+      else { optStatus = "possible"; }
 
       // Update list item
       var listItem = document.querySelector('.option-list-item[data-option-id="' + opt.id + '"]');
       if (listItem) {
         var wasActive = listItem.classList.contains("active");
-        listItem.className = "option-list-item " + status + (wasActive ? " active" : "");
+        listItem.className = "option-list-item " + optStatus + (wasActive ? " active" : "");
         var listStatus = listItem.querySelector(".option-status");
-        listStatus.textContent = status;
-        listStatus.className = "option-status " + status;
+        listStatus.textContent = optStatus;
+        listStatus.className = "option-status " + optStatus;
 
-        // Update list item req grid
         var listGrid = listItem.querySelector(".req-grid");
         if (listGrid) {
           updateReqGrid(listGrid, reqsMet, hardReqs, checkedReqs, hardMet, hardOf, softMet, softOf);
@@ -1270,13 +1295,12 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!el) return;
 
       var wasActive = el.classList.contains("active");
-      el.className = "option-detail-panel " + status + (wasActive ? " active" : "");
+      el.className = "option-detail-panel " + optStatus + (wasActive ? " active" : "");
 
       var statusEl = el.querySelector(".option-status");
-      statusEl.textContent = status;
-      statusEl.className = "option-status " + status;
+      statusEl.textContent = optStatus;
+      statusEl.className = "option-status " + optStatus;
 
-      // Failed requirements
       var failedEl = el.querySelector(".failed-reqs");
       if (failedReqs.length > 0) {
         var descs = failedReqs.map(function (id) {
@@ -1289,7 +1313,6 @@ document.addEventListener("DOMContentLoaded", function () {
         failedEl.style.display = "none";
       }
 
-      // Fired blocks
       var blocksEl = el.querySelector(".blocks-list");
       if (firedBlocks.length > 0) {
         blocksEl.innerHTML = firedBlocks.map(function (r) {
@@ -1300,7 +1323,6 @@ document.addEventListener("DOMContentLoaded", function () {
         blocksEl.style.display = "none";
       }
 
-      // Effects
       var effectsEl = el.querySelector(".effects-list");
       if (effects.length > 0) {
         effectsEl.innerHTML = effects.map(function (e) {
@@ -1315,21 +1337,16 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function updateReqGrid(gridEl, reqsMet, hardReqs, checkedReqs, hardMet, hardOf, softMet, softOf) {
-    var cells = gridEl.querySelectorAll(".req-cell");
-    cells.forEach(function (cell) {
+    gridEl.querySelectorAll(".req-cell").forEach(function (cell) {
       var reqId = cell.dataset.req;
       var reqStatus = reqsMet[reqId];
       var isHard = hardReqs[reqId];
       var checked = checkedReqs[reqId];
       cell.className = "req-cell";
       if (reqStatus) {
-        if (reqStatus.met) {
-          cell.classList.add("met");
-        } else if (reqStatus.partial) {
-          cell.classList.add("partial");
-        } else if (checked && isHard) {
-          cell.classList.add("failed");
-        }
+        if (reqStatus.met) { cell.classList.add("met"); }
+        else if (reqStatus.partial) { cell.classList.add("partial"); }
+        else if (checked && isHard) { cell.classList.add("failed"); }
       }
     });
     var label = gridEl.querySelector(".req-grid-label");
@@ -1342,7 +1359,62 @@ document.addEventListener("DOMContentLoaded", function () {
     return div.innerHTML;
   }
 
-  // Load button
+  // --- State sync ---
+
+  var syncTimer = null;
+
+  function syncState(debounceMs) {
+    if (syncTimer) clearTimeout(syncTimer);
+
+    var doSync = function () {
+      var payload = structuredClone({ requirements: state.requirements, items: state.items });
+
+      fetch("/state", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then(function (resp) {
+          if (!resp.ok) {
+            return resp.json().then(function (body) {
+              showToast("Sync failed: " + (body.error || "unknown error"));
+              if (body.requirements && body.items) {
+                state.requirements = body.requirements;
+                state.items = body.items;
+                render();
+              }
+            });
+          }
+        })
+        .catch(function () {
+          showToast("Sync failed: server unreachable");
+          setTimeout(function () { syncState(0); }, 3000);
+        });
+    };
+
+    if (debounceMs > 0) {
+      syncTimer = setTimeout(doSync, debounceMs);
+    } else {
+      doSync();
+    }
+  }
+
+  function showToast(msg) {
+    var existing = document.querySelector(".toast");
+    if (existing) existing.remove();
+    var el = document.createElement("div");
+    el.className = "toast";
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { el.classList.add("visible"); }, 10);
+    setTimeout(function () {
+      el.classList.remove("visible");
+      setTimeout(function () { el.remove(); }, 300);
+    }, 3000);
+  }
+
+  // --- Load / Export ---
+
   var loadBtn = document.getElementById("load-btn");
   var loadInput = document.getElementById("load-file-input");
   if (loadBtn && loadInput) {
@@ -1361,43 +1433,15 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Export button
   var exportBtn = document.getElementById("export-btn");
   if (exportBtn) {
-    exportBtn.addEventListener("click", async function () {
-      var resp = await fetch("/export");
-      if (!resp.ok) {
-        alert("Export failed: " + (await resp.text()));
-        return;
-      }
-      var blob = await resp.blob();
-
-      if (window.showSaveFilePicker) {
-        try {
-          var handle = await window.showSaveFilePicker({
-            suggestedName: "record.yaml",
-            types: [{ description: "YAML", accept: { "application/x-yaml": [".yaml", ".yml"] } }]
-          });
-          var writable = await handle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-          return;
-        } catch (e) {
-          if (e.name === "AbortError") return; // user cancelled
-        }
-      }
-
-      // Fallback: auto-download
-      var a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "record.yaml";
-      a.click();
-      URL.revokeObjectURL(a.href);
+    exportBtn.addEventListener("click", function () {
+      window.location.href = "/export";
     });
   }
 
-  // Initial evaluation
-  evaluate();
+  // Initial render
+  render();
 });
 </script>
 </body>
