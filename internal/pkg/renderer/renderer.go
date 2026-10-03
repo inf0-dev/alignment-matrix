@@ -79,6 +79,7 @@ type pageData struct {
 	RequirementsJSON template.JS
 	ItemsJSON        template.JS
 	SchemaJSON       template.JS
+	FinalJSON        template.JS
 }
 
 // HTML renders a Record as a self-contained HTML page.
@@ -98,6 +99,11 @@ func HTML(r *v1.Record) (string, error) {
 		return "", fmt.Errorf("failed to marshal schema: %w", err)
 	}
 
+	finalJSON, err := json.Marshal(r.Final)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal final: %w", err)
+	}
+
 	data := pageData{
 		Record:           *r,
 		CSS:              template.CSS(minCSS),
@@ -105,6 +111,7 @@ func HTML(r *v1.Record) (string, error) {
 		RequirementsJSON: template.JS(reqJSON),
 		ItemsJSON:        template.JS(itemsJSON),
 		SchemaJSON:       template.JS(schemaJSON),
+		FinalJSON:        template.JS(finalJSON),
 	}
 
 	var buf bytes.Buffer

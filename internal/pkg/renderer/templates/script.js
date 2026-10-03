@@ -29,7 +29,134 @@ document.addEventListener("DOMContentLoaded", function () {
     ),
     items: JSON.parse(document.getElementById("data-items").textContent),
     schema: JSON.parse(document.getElementById("data-schema").textContent),
+    final: JSON.parse(document.getElementById("data-final").textContent),
   };
+
+  // --- Helpers ---
+
+  function getOptionTitle(optId) {
+    var opt = state.schema.design_options.find(function (o) {
+      return o.id === optId;
+    });
+    return opt ? opt.title : optId;
+  }
+
+  function computeOptionStatus(optId) {
+    var opt = state.schema.design_options.find(function (o) {
+      return o.id === optId;
+    });
+    if (!opt) return "possible";
+
+    var checkedReqs = {};
+    state.requirements.forEach(function (r) {
+      checkedReqs[r.id] = r.checked;
+    });
+
+    var hardReqs = {};
+    state.schema.requirements.forEach(function (r) {
+      hardReqs[r.id] = r.is_hard;
+    });
+
+    var activeKeys = {};
+    state.items.forEach(function (item) {
+      if (item.kind === "choice" && item.answer) {
+        activeKeys[item.id + "." + item.answer] = true;
+      }
+    });
+
+    var reqsMet = opt.requirements_met || {};
+    for (var reqId in reqsMet) {
+      var status = reqsMet[reqId];
+      if (
+        hardReqs[reqId] &&
+        checkedReqs[reqId] &&
+        !status.met &&
+        !status.partial
+      ) {
+        return "eliminated";
+      }
+    }
+
+    var blocks = opt.blocks || [];
+    for (var i = 0; i < blocks.length; i++) {
+      var allMatch = blocks[i].condition.every(function (key) {
+        return activeKeys[key];
+      });
+      if (allMatch) return "blocked";
+    }
+
+    return "possible";
+  }
+
+  function showConfirmModal(title, body) {
+    return new Promise(function (resolve) {
+      var overlay = document.getElementById("confirm-modal");
+      document.getElementById("confirm-modal-title").textContent = title;
+      document.getElementById("confirm-modal-body").textContent = body;
+      overlay.style.display = "";
+
+      function cleanup(result) {
+        overlay.style.display = "none";
+        confirmBtn.removeEventListener("click", onConfirm);
+        cancelBtn.removeEventListener("click", onCancel);
+        overlay.removeEventListener("click", onOverlay);
+        resolve(result);
+      }
+
+      var confirmBtn = document.getElementById("confirm-modal-confirm");
+      var cancelBtn = document.getElementById("confirm-modal-cancel");
+
+      function onConfirm() {
+        cleanup(true);
+      }
+      function onCancel() {
+        cleanup(false);
+      }
+      function onOverlay(e) {
+        if (e.target === overlay) cleanup(false);
+      }
+
+      confirmBtn.addEventListener("click", onConfirm);
+      cancelBtn.addEventListener("click", onCancel);
+      overlay.addEventListener("click", onOverlay);
+    });
+  }
+
+  function checkDecisionAndApply(applyFn, revertFn) {
+    applyFn();
+
+    if (!state.final) {
+      render();
+      syncState(0);
+      return;
+    }
+
+    var newStatus = computeOptionStatus(state.final.option);
+    if (newStatus !== "eliminated" && newStatus !== "blocked") {
+      render();
+      syncState(0);
+      return;
+    }
+
+    var title = getOptionTitle(state.final.option);
+    revertFn();
+
+    showConfirmModal(
+      "Clear decision?",
+      'This change would make "' +
+        title +
+        '" ' +
+        newStatus +
+        ". Your decision will be cleared if you continue.",
+    ).then(function (confirmed) {
+      if (!confirmed) return;
+      applyFn();
+      state.final = null;
+      syncFinalize(null);
+      render();
+      syncState(0);
+    });
+  }
 
   // --- Event handlers: mutate state, then render ---
 
@@ -39,9 +166,16 @@ document.addEventListener("DOMContentLoaded", function () {
       var r = state.requirements.find(function (req) {
         return req.id === id;
       });
-      if (r) r.checked = !r.checked;
-      render();
-      syncState(0);
+      if (!r) return;
+
+      checkDecisionAndApply(
+        function () {
+          r.checked = !r.checked;
+        },
+        function () {
+          r.checked = !r.checked;
+        },
+      );
     });
   });
 
@@ -52,11 +186,17 @@ document.addEventListener("DOMContentLoaded", function () {
       var item = state.items.find(function (it) {
         return it.id === itemId;
       });
-      if (item) {
-        item.answer = item.answer === answerId ? null : answerId;
-      }
-      render();
-      syncState(0);
+      if (!item) return;
+
+      var prevAnswer = item.answer;
+      checkDecisionAndApply(
+        function () {
+          item.answer = item.answer === answerId ? null : answerId;
+        },
+        function () {
+          item.answer = prevAnswer;
+        },
+      );
     });
   });
 
@@ -77,7 +217,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // Option list selection (master-detail, UI-only — no state sync needed)
+  // Option list selection (master-detail, UI-only)
   document.querySelectorAll(".option-list-item").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var optId = this.dataset.optionId;
@@ -95,6 +235,52 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
   });
+
+  // --- Pick / Finalize handlers ---
+
+  document.querySelectorAll(".pick-btn").forEach(function (btn) {
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var area = this.closest(".pick-area");
+      area.querySelector(".pick-form").style.display = "";
+      this.style.display = "none";
+    });
+  });
+
+  document.querySelectorAll(".pick-cancel").forEach(function (btn) {
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var area = this.closest(".pick-area");
+      area.querySelector(".pick-form").style.display = "none";
+      area.querySelector(".pick-btn").style.display = "";
+      area.querySelector(".pick-rationale").value = "";
+    });
+  });
+
+  document.querySelectorAll(".pick-confirm").forEach(function (btn) {
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var area = this.closest(".pick-area");
+      var optId = area.dataset.option;
+      var rationale = area.querySelector(".pick-rationale").value.trim();
+
+      state.final = { option: optId, rationale: rationale };
+      syncFinalize(state.final);
+      render();
+      document
+        .getElementById("decision-section")
+        .scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  var undoBtn = document.getElementById("decision-undo");
+  if (undoBtn) {
+    undoBtn.addEventListener("click", function () {
+      state.final = null;
+      syncFinalize(null);
+      render();
+    });
+  }
 
   // --- Render: sync ALL UI from state ---
 
@@ -207,6 +393,11 @@ document.addEventListener("DOMContentLoaded", function () {
         optStatus = "eliminated";
       } else if (firedBlocks.length > 0) {
         optStatus = "blocked";
+      } else if (
+        state.final &&
+        state.final.option === opt.id
+      ) {
+        optStatus = "picked";
       } else {
         optStatus = "possible";
       }
@@ -299,7 +490,41 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         effectsEl.style.display = "none";
       }
+
+      // Update pick area
+      var pickArea = el.querySelector(".pick-area");
+      if (pickArea) {
+        if (!state.final && optStatus === "possible") {
+          pickArea.style.display = "";
+          pickArea.querySelector(".pick-btn").style.display = "";
+          pickArea.querySelector(".pick-form").style.display = "none";
+          pickArea.querySelector(".pick-rationale").value = "";
+        } else {
+          pickArea.style.display = "none";
+        }
+      }
     });
+
+    // Update decision section
+    var decisionEmpty = document.getElementById("decision-empty");
+    var decisionMade = document.getElementById("decision-made");
+    if (state.final) {
+      document.getElementById("decision-title").textContent = getOptionTitle(
+        state.final.option,
+      );
+      var rationaleEl = document.getElementById("decision-rationale");
+      if (state.final.rationale) {
+        rationaleEl.textContent = state.final.rationale;
+        rationaleEl.style.display = "";
+      } else {
+        rationaleEl.style.display = "none";
+      }
+      decisionEmpty.style.display = "none";
+      decisionMade.style.display = "";
+    } else {
+      decisionEmpty.style.display = "";
+      decisionMade.style.display = "none";
+    }
   }
 
   function updateReqGrid(
@@ -381,6 +606,22 @@ document.addEventListener("DOMContentLoaded", function () {
       syncTimer = setTimeout(doSync, debounceMs);
     } else {
       doSync();
+    }
+  }
+
+  function syncFinalize(final) {
+    if (final) {
+      fetch("/finalize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(final),
+      }).catch(function () {
+        showToast("Failed to save decision");
+      });
+    } else {
+      fetch("/finalize", { method: "DELETE" }).catch(function () {
+        showToast("Failed to clear decision");
+      });
     }
   }
 

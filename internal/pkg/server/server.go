@@ -55,6 +55,7 @@ func (s *Server) Run(ctx context.Context) error {
 	mux.HandleFunc("/upload", s.handleUpload)
 	mux.HandleFunc("/export", s.handleExport)
 	mux.HandleFunc("/state", s.handleState)
+	mux.HandleFunc("/finalize", s.handleFinalize)
 	mux.Handle("/assets/", http.FileServer(http.FS(assetsFS)))
 	mux.HandleFunc("/", s.handlePage)
 
@@ -296,6 +297,67 @@ func parseUpload(data []byte, filename string) (*v1.Record, error) {
 		return rec, nil
 	default:
 		return nil, fmt.Errorf("invalid type: %s", docType)
+	}
+}
+
+func (s *Server) handleFinalize(w http.ResponseWriter, r *http.Request) {
+	s.mu.RLock()
+	rec := s.record
+	s.mu.RUnlock()
+
+	if rec == nil {
+		http.Error(w, "no document loaded", http.StatusNotFound)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodPost:
+		var body struct {
+			Option    string `json:"option"`
+			Rationale string `json:"rationale"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		var title string
+		for _, opt := range rec.Model.Schema.DesignOptions {
+			if opt.ID == body.Option {
+				title = opt.Title
+				break
+			}
+		}
+		if title == "" {
+			http.Error(w, "unknown option ID", http.StatusBadRequest)
+			return
+		}
+
+		for _, opt := range rec.Options {
+			if opt.ID == body.Option && opt.Status != v1.StatusPossible {
+				http.Error(w, "option is "+string(opt.Status), http.StatusConflict)
+				return
+			}
+		}
+
+		s.mu.Lock()
+		s.record.Final = &v1.FinalDecision{
+			Option:    body.Option,
+			Title:     title,
+			Rationale: body.Rationale,
+		}
+		s.mu.Unlock()
+
+		w.WriteHeader(http.StatusNoContent)
+
+	case http.MethodDelete:
+		s.mu.Lock()
+		s.record.Final = nil
+		s.mu.Unlock()
+		w.WriteHeader(http.StatusNoContent)
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 

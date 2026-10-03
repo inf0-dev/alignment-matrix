@@ -40,7 +40,7 @@ func NewServeCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&path, "path", "p", "", "Path to the document or record file (optional; if omitted, starts with upload UI)")
-	cmd.Flags().StringVarP(&addr, "addr", "a", ":8080", "Address to listen on")
+	cmd.Flags().StringVarP(&addr, "address", "a", ":8080", "Address to listen on")
 
 	return cmd
 }

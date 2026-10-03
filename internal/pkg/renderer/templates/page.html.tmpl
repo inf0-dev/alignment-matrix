@@ -150,11 +150,54 @@
             <li>{{ if .Category }}<span class="effect-category">{{ .Category }}</span>{{ end }}{{ .Text }} <span style="color:var(--text-tertiary)">({{ .Kind }})</span></li>
             {{ end }}
           </ul>
+
+          <div class="pick-area" data-option="{{ .ID }}" style="display:none">
+            <button type="button" class="pick-btn">Pick this option</button>
+            <div class="pick-form" style="display:none">
+              <label class="pick-label" for="rationale-{{ .ID }}">Rationale (optional)</label>
+              <textarea class="pick-rationale" id="rationale-{{ .ID }}" placeholder="Why this option?"></textarea>
+              <div class="pick-actions">
+                <button type="button" class="pick-confirm">Confirm</button>
+                <button type="button" class="pick-cancel">Cancel</button>
+              </div>
+            </div>
+          </div>
         </div>
         {{ end }}
       </div>
     </div>
   </details>
+
+  <details class="section" id="decision-section" open>
+    <summary class="section-heading">
+      <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <span class="section-title">Decision</span>
+    </summary>
+    <div id="decision-empty" class="decision-empty">
+      No decision made yet. Align on an option from Design Options above.
+    </div>
+    <div id="decision-made" class="decision-made" style="display:none">
+      <div class="decision-header">
+        <div class="decision-option">
+          <span class="decision-label">Picked</span>
+          <span class="decision-title" id="decision-title"></span>
+        </div>
+        <button type="button" class="decision-undo" id="decision-undo">Undo</button>
+      </div>
+      <div class="decision-rationale" id="decision-rationale" style="display:none"></div>
+    </div>
+  </details>
+
+  <div class="modal-overlay" id="confirm-modal" style="display:none">
+    <div class="modal-card">
+      <div class="modal-title" id="confirm-modal-title"></div>
+      <div class="modal-body" id="confirm-modal-body"></div>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn modal-btn-cancel" id="confirm-modal-cancel">Cancel</button>
+        <button type="button" class="modal-btn modal-btn-confirm" id="confirm-modal-confirm">Continue</button>
+      </div>
+    </div>
+  </div>
 
   <footer class="page-footer">
     Built with <a class="alma-link" href="https://github.com/inf0-dev/alma" target="_blank" rel="noopener">alma</a> by <a href="https://github.com/inf0-dev" target="_blank" rel="noopener">inf0-dev</a>
@@ -163,6 +206,7 @@
   <script id="data-requirements" type="application/json">{{ .RequirementsJSON }}</script>
   <script id="data-items" type="application/json">{{ .ItemsJSON }}</script>
   <script id="data-schema" type="application/json">{{ .SchemaJSON }}</script>
+  <script id="data-final" type="application/json">{{ .FinalJSON }}</script>
   <script>{{ .JS }}</script>
 </body>
 </html>

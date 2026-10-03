@@ -58,8 +58,9 @@ update_golden:
     @ go test -tags=integration ./internal/pkg/renderer/ -update
 
 # run the server
-serve:
-    @ go run ./app/cli serve
+[arg("port", pattern="[0-9]+", help="local port to listen on")]
+serve port='8080':
+    @ go run ./app/cli serve --address ":{{ port }}"
 
 # check that required dev tools are installed
 check-dev:
