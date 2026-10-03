@@ -30,15 +30,18 @@ document.addEventListener("DOMContentLoaded", function () {
     items: JSON.parse(document.getElementById("data-items").textContent),
     schema: JSON.parse(document.getElementById("data-schema").textContent),
     final: JSON.parse(document.getElementById("data-final").textContent),
-    history: JSON.parse(document.getElementById("data-history").textContent) || [],
+    history:
+      JSON.parse(document.getElementById("data-history").textContent) || [],
   };
 
   var isStatic = window.location.protocol === "file:";
 
   if (isStatic) {
-    document.querySelectorAll("#load-btn, #export-dropdown, #print-btn").forEach(function (el) {
-      el.style.display = "none";
-    });
+    document
+      .querySelectorAll("#load-btn, #export-dropdown, #print-btn")
+      .forEach(function (el) {
+        el.style.display = "none";
+      });
   }
 
   // --- Helpers ---
@@ -283,9 +286,12 @@ document.addEventListener("DOMContentLoaded", function () {
       var rationale = area.querySelector(".pick-rationale").value.trim();
       var presentRaw = area.querySelector(".pick-present").value.trim();
       var present = presentRaw
-        ? presentRaw.split(",").map(function (s) {
-            return s.trim();
-          }).filter(Boolean)
+        ? presentRaw
+            .split(",")
+            .map(function (s) {
+              return s.trim();
+            })
+            .filter(Boolean)
         : [];
 
       // Move existing decision to history before replacing
@@ -436,10 +442,7 @@ document.addEventListener("DOMContentLoaded", function () {
         optStatus = "eliminated";
       } else if (firedBlocks.length > 0) {
         optStatus = "blocked";
-      } else if (
-        state.final &&
-        state.final.option === opt.id
-      ) {
+      } else if (state.final && state.final.option === opt.id) {
         optStatus = "picked";
       } else {
         optStatus = "possible";
@@ -669,14 +672,18 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!iso) return "";
     var d = new Date(iso);
     if (isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }) + " " + d.toLocaleTimeString(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-    });
+    return (
+      d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }) +
+      " " +
+      d.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    );
   }
 
   function escapeHtml(s) {
