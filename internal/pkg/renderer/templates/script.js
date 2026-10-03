@@ -33,6 +33,14 @@ document.addEventListener("DOMContentLoaded", function () {
     history: JSON.parse(document.getElementById("data-history").textContent) || [],
   };
 
+  var isStatic = window.location.protocol === "file:";
+
+  if (isStatic) {
+    document.querySelectorAll("#load-btn, #export-dropdown, #print-btn").forEach(function (el) {
+      el.style.display = "none";
+    });
+  }
+
   // --- Helpers ---
 
   function getOptionTitle(optId) {
@@ -682,6 +690,7 @@ document.addEventListener("DOMContentLoaded", function () {
   var syncTimer = null;
 
   function syncState(debounceMs) {
+    if (isStatic) return;
     if (syncTimer) clearTimeout(syncTimer);
 
     var doSync = function () {
@@ -723,6 +732,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function syncFinalize(final) {
+    if (isStatic) return;
     if (final) {
       fetch("/finalize", {
         method: "POST",
