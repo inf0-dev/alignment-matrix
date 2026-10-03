@@ -28,8 +28,15 @@ test_coverage:
 lint:
     @ golangci-lint run --timeout 5m
 
-fmt:
+fmt: fmt-go fmt-frontend
+
+# format Go source files
+fmt-go:
     @ go fmt ./...
+
+# format CSS and JS files with Prettier (HTML templates skipped; template syntax breaks Prettier)
+fmt-frontend:
+    @ npx --yes prettier --write "internal/**/*.{css,js}" --log-level warn
 
 # run accessibility check on rendered demo (light + dark)
 a11y: demo
@@ -53,6 +60,26 @@ update_golden:
 # run the server
 serve:
     @ go run ./app/cli serve
+
+# check that required dev tools are installed
+check-dev:
+    #!/usr/bin/env sh
+    missing=""
+    for tool in go golangci-lint npx pa11y; do
+        if command -v "$tool" >/dev/null 2>&1; then
+            printf "  %-20s %s\n" "$tool" "$(command -v $tool)"
+        else
+            printf "  %-20s MISSING\n" "$tool"
+            missing="$missing $tool"
+        fi
+    done
+    if [ -n "$missing" ]; then
+        echo ""
+        echo "Missing:$missing"
+        exit 1
+    else
+        echo "All dev tools found."
+    fi
 
 build:
     @ go build -ldflags="-s -w" -o {{ out_dir }}/alma ./app/cli
