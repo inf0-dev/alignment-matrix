@@ -345,8 +345,9 @@ func (s *Server) handleFinalize(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		var body struct {
-			Option    string `json:"option"`
-			Rationale string `json:"rationale"`
+			Option    string   `json:"option"`
+			Rationale string   `json:"rationale"`
+			Present   []string `json:"present"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			http.Error(w, "invalid JSON", http.StatusBadRequest)
@@ -373,18 +374,43 @@ func (s *Server) handleFinalize(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.mu.Lock()
+		// Move existing decision to history before replacing
+		if s.record.Final != nil {
+			s.record.History = append(s.record.History, v1.HistoryEntry{
+				DecidedOn:   s.record.DecidedOn,
+				Present:     s.record.Present,
+				Option:      s.record.Final.Option,
+				Title:       s.record.Final.Title,
+				Rationale:   s.record.Final.Rationale,
+				ModelSHA256: s.record.ModelSHA256,
+			})
+		}
 		s.record.Final = &v1.FinalDecision{
 			Option:    body.Option,
 			Title:     title,
 			Rationale: body.Rationale,
 		}
+		s.record.Present = body.Present
+		s.record.DecidedOn = time.Now().UTC().Format(time.RFC3339)
 		s.mu.Unlock()
 
 		w.WriteHeader(http.StatusNoContent)
 
 	case http.MethodDelete:
 		s.mu.Lock()
+		if s.record.Final != nil {
+			s.record.History = append(s.record.History, v1.HistoryEntry{
+				DecidedOn:   s.record.DecidedOn,
+				Present:     s.record.Present,
+				Option:      s.record.Final.Option,
+				Title:       s.record.Final.Title,
+				Rationale:   s.record.Final.Rationale,
+				ModelSHA256: s.record.ModelSHA256,
+			})
+		}
 		s.record.Final = nil
+		s.record.Present = nil
+		s.record.DecidedOn = ""
 		s.mu.Unlock()
 		w.WriteHeader(http.StatusNoContent)
 

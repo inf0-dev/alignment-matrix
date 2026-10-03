@@ -836,6 +836,11 @@ textarea::placeholder {
   font-weight: 700;
   font-size: 1.05rem;
 }
+.decision-meta {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  margin-top: 0.5rem;
+}
 .decision-rationale {
   font-size: 0.9rem;
   color: var(--text-secondary);

@@ -166,6 +166,8 @@
           <div class="pick-area" data-option="{{ .ID }}" style="display:none">
             <button type="button" class="pick-btn">Pick this option</button>
             <div class="pick-form" style="display:none">
+              <label class="pick-label" for="present-{{ .ID }}">Present</label>
+              <input type="text" class="pick-present" id="present-{{ .ID }}" value="{{ if $.Present }}{{ joinStrings $.Present ", " }}{{ else }}{{ joinStrings $.Model.Metadata.Attendees ", " }}{{ end }}" placeholder="Alice, Bob, Carol">
               <label class="pick-label" for="rationale-{{ .ID }}">Rationale (optional)</label>
               <textarea class="pick-rationale" id="rationale-{{ .ID }}" placeholder="Why this option?"></textarea>
               <div class="pick-actions">
@@ -196,6 +198,7 @@
         </div>
         <button type="button" class="decision-undo" id="decision-undo">Undo</button>
       </div>
+      <div class="decision-meta" id="decision-meta" style="display:none"></div>
       <div class="decision-rationale" id="decision-rationale" style="display:none"></div>
     </div>
   </details>

@@ -263,8 +263,14 @@ document.addEventListener("DOMContentLoaded", function () {
       var area = this.closest(".pick-area");
       var optId = area.dataset.option;
       var rationale = area.querySelector(".pick-rationale").value.trim();
+      var presentRaw = area.querySelector(".pick-present").value.trim();
+      var present = presentRaw
+        ? presentRaw.split(",").map(function (s) {
+            return s.trim();
+          }).filter(Boolean)
+        : [];
 
-      state.final = { option: optId, rationale: rationale };
+      state.final = { option: optId, rationale: rationale, present: present };
       syncFinalize(state.final);
       render();
       document
@@ -494,9 +500,16 @@ document.addEventListener("DOMContentLoaded", function () {
       // Update pick area
       var pickArea = el.querySelector(".pick-area");
       if (pickArea) {
-        if (!state.final && optStatus === "possible") {
+        var isPicked = state.final && state.final.option === opt.id;
+        if (isPicked) {
+          pickArea.style.display = "none";
+        } else if (optStatus === "possible") {
           pickArea.style.display = "";
-          pickArea.querySelector(".pick-btn").style.display = "";
+          var pickBtn = pickArea.querySelector(".pick-btn");
+          pickBtn.style.display = "";
+          pickBtn.textContent = state.final
+            ? "Pick this instead"
+            : "Pick this option";
           pickArea.querySelector(".pick-form").style.display = "none";
           pickArea.querySelector(".pick-rationale").value = "";
         } else {
@@ -512,6 +525,17 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("decision-title").textContent = getOptionTitle(
         state.final.option,
       );
+      var metaEl = document.getElementById("decision-meta");
+      var metaParts = [];
+      if (state.final.present && state.final.present.length > 0) {
+        metaParts.push(state.final.present.join(", "));
+      }
+      if (metaParts.length > 0) {
+        metaEl.textContent = metaParts.join(" · ");
+        metaEl.style.display = "";
+      } else {
+        metaEl.style.display = "none";
+      }
       var rationaleEl = document.getElementById("decision-rationale");
       if (state.final.rationale) {
         rationaleEl.textContent = state.final.rationale;

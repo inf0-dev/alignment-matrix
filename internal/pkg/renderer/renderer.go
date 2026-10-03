@@ -99,7 +99,22 @@ func HTML(r *v1.Record) (string, error) {
 		return "", fmt.Errorf("failed to marshal schema: %w", err)
 	}
 
-	finalJSON, err := json.Marshal(r.Final)
+	type finalData struct {
+		Option    string   `json:"option"`
+		Title     string   `json:"title"`
+		Rationale string   `json:"rationale,omitempty"`
+		Present   []string `json:"present,omitempty"`
+	}
+	var fd *finalData
+	if r.Final != nil {
+		fd = &finalData{
+			Option:    r.Final.Option,
+			Title:     r.Final.Title,
+			Rationale: r.Final.Rationale,
+			Present:   r.Present,
+		}
+	}
+	finalJSON, err := json.Marshal(fd)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal final: %w", err)
 	}
