@@ -8,6 +8,10 @@ import (
 	"html/template"
 	"strings"
 
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/css"
+	"github.com/tdewolff/minify/v2/js"
+
 	v1 "github.com/inf0-dev/alma/api/v1"
 )
 
@@ -22,6 +26,27 @@ var rawJS string
 
 //go:embed templates/*
 var _ embed.FS
+
+var (
+	minCSS string
+	minJS  string
+)
+
+func init() {
+	m := minify.New()
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("application/javascript", js.Minify)
+
+	var err error
+	minCSS, err = m.String("text/css", rawCSS)
+	if err != nil {
+		minCSS = rawCSS // fallback to unminified
+	}
+	minJS, err = m.String("application/javascript", rawJS)
+	if err != nil {
+		minJS = rawJS
+	}
+}
 
 // ReqGridCell represents one square in the commit-graph style requirement grid.
 type ReqGridCell struct {
@@ -75,8 +100,8 @@ func HTML(r *v1.Record) (string, error) {
 
 	data := pageData{
 		Record:           *r,
-		CSS:              template.CSS(rawCSS),
-		JS:               template.JS(rawJS),
+		CSS:              template.CSS(minCSS),
+		JS:               template.JS(minJS),
 		RequirementsJSON: template.JS(reqJSON),
 		ItemsJSON:        template.JS(itemsJSON),
 		SchemaJSON:       template.JS(schemaJSON),
