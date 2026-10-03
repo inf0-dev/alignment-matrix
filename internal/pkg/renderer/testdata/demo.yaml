@@ -2,10 +2,7 @@ version: "alma/record/v1"
 model:
   metadata:
     version: "alma/v1"
-    attendees:
-      - Alice
-      - Bob
-      - Carol
+    author: "Alice"
     date: "2026-09-15"
   schema:
     title: "Cache Strategy Decision"

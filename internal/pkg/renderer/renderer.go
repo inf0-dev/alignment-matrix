@@ -80,6 +80,7 @@ type pageData struct {
 	ItemsJSON        template.JS
 	SchemaJSON       template.JS
 	FinalJSON        template.JS
+	HistoryJSON      template.JS
 }
 
 // HTML renders a Record as a self-contained HTML page.
@@ -114,6 +115,11 @@ func HTML(r *v1.Record) (string, error) {
 			Present:   r.Present,
 		}
 	}
+	historyJSON, err := json.Marshal(r.History)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal history: %w", err)
+	}
+
 	finalJSON, err := json.Marshal(fd)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal final: %w", err)
@@ -127,6 +133,7 @@ func HTML(r *v1.Record) (string, error) {
 		ItemsJSON:        template.JS(itemsJSON),
 		SchemaJSON:       template.JS(schemaJSON),
 		FinalJSON:        template.JS(finalJSON),
+		HistoryJSON:      template.JS(historyJSON),
 	}
 
 	var buf bytes.Buffer

@@ -48,7 +48,7 @@
     <div class="meta">
       {{ if .Model.Schema.Issue }}<span><a href="{{ .Model.Schema.Issue }}" target="_blank" rel="noopener">View Issue ↗</a></span>{{ end }}
       {{ if .Model.Metadata.Date }}<span>{{ .Model.Metadata.Date }}</span>{{ end }}
-      {{ if .Model.Metadata.Attendees }}<span>{{ joinStrings .Model.Metadata.Attendees ", " }}</span>{{ end }}
+      {{ if .Model.Metadata.Author }}<span>by {{ .Model.Metadata.Author }}</span>{{ end }}
     </div>
   </header>
 
@@ -90,7 +90,7 @@
           {{ if .Value }}value="{{ .Value }}"{{ end }}
           {{ if .Unit }}placeholder="{{ .Unit }}"{{ end }}>
         {{ else -}}
-        <textarea id="input-{{ $item.ID }}" class="item-input" data-item="{{ $item.ID }}" placeholder="Enter text...">{{ if .Value }}{{ .Value }}{{ end }}</textarea>
+        <textarea id="input-{{ $item.ID }}" class="item-input" data-item="{{ $item.ID }}" placeholder="">{{ if .Value }}{{ .Value }}{{ end }}</textarea>
         {{ end }}
       </div>
       {{ end }}
@@ -167,7 +167,7 @@
             <button type="button" class="pick-btn">Pick this option</button>
             <div class="pick-form" style="display:none">
               <label class="pick-label" for="present-{{ .ID }}">Present</label>
-              <input type="text" class="pick-present" id="present-{{ .ID }}" value="{{ if $.Present }}{{ joinStrings $.Present ", " }}{{ else }}{{ joinStrings $.Model.Metadata.Attendees ", " }}{{ end }}" placeholder="Alice, Bob, Carol">
+              <input type="text" class="pick-present" id="present-{{ .ID }}" value="{{ if $.Present }}{{ joinStrings $.Present ", " }}{{ end }}" placeholder="Who was present for this decision?">
               <label class="pick-label" for="rationale-{{ .ID }}">Rationale (optional)</label>
               <textarea class="pick-rationale" id="rationale-{{ .ID }}" placeholder="Why this option?"></textarea>
               <div class="pick-actions">
@@ -203,6 +203,14 @@
     </div>
   </details>
 
+  <details class="section section-history" id="history-section" style="display:none">
+    <summary class="section-heading">
+      <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <span class="section-title">History <span class="section-count" id="history-count"></span></span>
+    </summary>
+    <div class="history-list" id="history-list"></div>
+  </details>
+
   <div class="modal-overlay" id="confirm-modal" style="display:none">
     <div class="modal-card">
       <div class="modal-title" id="confirm-modal-title"></div>
@@ -222,6 +230,7 @@
   <script id="data-items" type="application/json">{{ .ItemsJSON }}</script>
   <script id="data-schema" type="application/json">{{ .SchemaJSON }}</script>
   <script id="data-final" type="application/json">{{ .FinalJSON }}</script>
+  <script id="data-history" type="application/json">{{ .HistoryJSON }}</script>
   <script>{{ .JS }}</script>
 </body>
 </html>

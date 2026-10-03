@@ -941,6 +941,35 @@ textarea::placeholder {
   color: var(--text);
 }
 
+/* History */
+.section-history {
+  border-left-color: var(--border-strong) !important;
+}
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.history-entry {
+  border-left: 2px solid var(--border);
+  padding-left: 1rem;
+}
+.history-entry-title {
+  font-weight: 600;
+  color: var(--text);
+}
+.history-entry-meta {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  margin-top: 0.125rem;
+}
+.history-entry-rationale {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
 /* Confirmation modal */
 .modal-overlay {
   position: fixed;

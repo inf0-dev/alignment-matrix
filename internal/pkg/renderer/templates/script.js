@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", function () {
     items: JSON.parse(document.getElementById("data-items").textContent),
     schema: JSON.parse(document.getElementById("data-schema").textContent),
     final: JSON.parse(document.getElementById("data-final").textContent),
+    history: JSON.parse(document.getElementById("data-history").textContent) || [],
   };
 
   // --- Helpers ---
@@ -151,6 +152,15 @@ document.addEventListener("DOMContentLoaded", function () {
     ).then(function (confirmed) {
       if (!confirmed) return;
       applyFn();
+      if (state.final) {
+        state.history.push({
+          decided_on: new Date().toISOString(),
+          present: state.final.present || [],
+          option: state.final.option,
+          title: getOptionTitle(state.final.option),
+          rationale: state.final.rationale || "",
+        });
+      }
       state.final = null;
       syncFinalize(null);
       render();
@@ -270,6 +280,16 @@ document.addEventListener("DOMContentLoaded", function () {
           }).filter(Boolean)
         : [];
 
+      // Move existing decision to history before replacing
+      if (state.final) {
+        state.history.push({
+          decided_on: new Date().toISOString(),
+          present: state.final.present || [],
+          option: state.final.option,
+          title: getOptionTitle(state.final.option),
+          rationale: state.final.rationale || "",
+        });
+      }
       state.final = { option: optId, rationale: rationale, present: present };
       syncFinalize(state.final);
       render();
@@ -282,6 +302,15 @@ document.addEventListener("DOMContentLoaded", function () {
   var undoBtn = document.getElementById("decision-undo");
   if (undoBtn) {
     undoBtn.addEventListener("click", function () {
+      if (state.final) {
+        state.history.push({
+          decided_on: new Date().toISOString(),
+          present: state.final.present || [],
+          option: state.final.option,
+          title: getOptionTitle(state.final.option),
+          rationale: state.final.rationale || "",
+        });
+      }
       state.final = null;
       syncFinalize(null);
       render();
@@ -549,6 +578,52 @@ document.addEventListener("DOMContentLoaded", function () {
       decisionEmpty.style.display = "";
       decisionMade.style.display = "none";
     }
+
+    // Update history section
+    var historySection = document.getElementById("history-section");
+    if (state.history.length > 0) {
+      historySection.style.display = "";
+      document.getElementById("history-count").textContent =
+        "(" + state.history.length + ")";
+      var historyList = document.getElementById("history-list");
+      // Render newest first
+      var reversed = state.history.slice().reverse();
+      historyList.innerHTML = reversed
+        .map(function (entry) {
+          var parts = ['<div class="history-entry">'];
+          parts.push(
+            '<div class="history-entry-title">' +
+              escapeHtml(entry.title) +
+              "</div>",
+          );
+          var metaParts = [];
+          if (entry.decided_on) {
+            metaParts.push(formatDateTime(entry.decided_on));
+          }
+          if (entry.present && entry.present.length > 0) {
+            metaParts.push(entry.present.join(", "));
+          }
+          if (metaParts.length > 0) {
+            parts.push(
+              '<div class="history-entry-meta">' +
+                escapeHtml(metaParts.join(" · ")) +
+                "</div>",
+            );
+          }
+          if (entry.rationale) {
+            parts.push(
+              '<div class="history-entry-rationale">' +
+                escapeHtml(entry.rationale) +
+                "</div>",
+            );
+          }
+          parts.push("</div>");
+          return parts.join("");
+        })
+        .join("");
+    } else {
+      historySection.style.display = "none";
+    }
   }
 
   function updateReqGrid(
@@ -580,6 +655,20 @@ document.addEventListener("DOMContentLoaded", function () {
     var label = gridEl.querySelector(".req-grid-label");
     label.textContent =
       hardMet + "/" + hardOf + " hard · " + softMet + "/" + softOf + " soft";
+  }
+
+  function formatDateTime(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }) + " " + d.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
   }
 
   function escapeHtml(s) {

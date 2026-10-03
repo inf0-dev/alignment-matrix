@@ -124,8 +124,8 @@ type DesignOption struct {
 type Metadata struct {
 	// Version is the schema version. Must match a known version constant (e.g. VersionV1) to select the correct parser/validator.
 	Version string `json:"version" yaml:"version"`
-	// Attendees is the list of people present at the alignment session.
-	Attendees []string `json:"attendees,omitempty" yaml:"attendees,omitempty"`
+	// Author is the person or team who authored this alma document.
+	Author string `json:"author,omitempty" yaml:"author,omitempty"`
 	// Date is the date of the alignment session.
 	Date string `json:"date,omitempty" yaml:"date,omitempty"`
 }
