@@ -667,10 +667,36 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // --- Print / PDF ---
+
+  var printBtn = document.getElementById("print-btn");
+  if (printBtn) {
+    printBtn.addEventListener("click", function () {
+      window.print();
+    });
+  }
+
+  // --- Export dropdown ---
+
   var exportBtn = document.getElementById("export-btn");
-  if (exportBtn) {
-    exportBtn.addEventListener("click", function () {
-      window.location.href = "/export";
+  var exportMenu = document.getElementById("export-menu");
+  if (exportBtn && exportMenu) {
+    exportBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var open = exportMenu.style.display !== "none";
+      exportMenu.style.display = open ? "none" : "";
+    });
+
+    document.querySelectorAll(".export-option").forEach(function (opt) {
+      opt.addEventListener("click", function (e) {
+        e.stopPropagation();
+        exportMenu.style.display = "none";
+        window.location.href = "/export?format=" + this.dataset.format;
+      });
+    });
+
+    document.addEventListener("click", function () {
+      exportMenu.style.display = "none";
     });
   }
 

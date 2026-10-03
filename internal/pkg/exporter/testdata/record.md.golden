@@ -1,23 +1,24 @@
 # Cache Strategy Decision
 
 **Issue:** https://github.com/example/project/issues/42
-**Decided on:** 2026-10-01T14:30:00Z
-
+**Date:** 2026-10-01T14:30:00Z
 **Present:** Alice, Bob, Carol
 
 ## Decision
 
-**Option:** [Redis Cluster](#redis-cluster)
+> **Redis Cluster**
+>
+> Best balance of performance and flexibility for our use case
 
-**Rationale:** Best balance of performance and flexibility for our use case
 
 ## Requirements
 
-| Requirement | Hard | Checked |
+| Requirement | Type | Active |
 |---|---|---|
-| P99 latency under 50ms | Yes | Yes |
-| Stay within infrastructure budget | Yes | Yes |
-| Supports distributed tracing | No | Yes |
+| P99 latency under 50ms | hard | ✅ |
+| Stay within infrastructure budget | hard | ✅ |
+| Supports distributed tracing | soft | ✅ |
+
 
 ## Items
 
@@ -28,41 +29,37 @@
 | Cache TTL | 300 seconds |
 | Additional notes | Prioritize simplicity over flexibility |
 
+
 ## Design Options
 
 ### Redis Cluster
 
 Managed Redis with read replicas
 
-**Status:** possible
+🟢 Possible · 1/2 hard · 1/1 soft
 
-**Requirements met:** 1/2 hard, 1/1 soft
-
-**Effects:**
-- [cost] Requires additional read replicas (changes)
-- [performance] Connection pooling recommended (note)
-
-**Pros:**
+**Pros**
 - Battle-tested
 - Rich data structures
 
-**Cons:**
+**Cons**
 - Operational overhead
 
+**Effects**
+- [cost] Requires additional read replicas _(changes)_
+- [performance] Connection pooling recommended _(note)_
 
 ### CDN Edge Cache
 
 Cache at the edge with a CDN provider
 
-**Status:** eliminated
+❌ Eliminated · 2/2 hard · 0/1 soft
 
-**Requirements met:** 2/2 hard, 0/1 soft
+❌ **Failed:** Supports distributed tracing
 
-**Failed requirements:** Supports distributed tracing
-
-**Pros:**
+**Pros**
 - Zero operational overhead
 
-**Cons:**
+**Cons**
 - Limited invalidation control
 

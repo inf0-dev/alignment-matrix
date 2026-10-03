@@ -1,52 +1,76 @@
 # {{ .Model.Schema.Title }}
-{{ if .Model.Schema.Issue }}
-**Issue:** {{ .Model.Schema.Issue }}
-{{ end }}{{ if .DecidedOn }}**Decided on:** {{ .DecidedOn }}
-{{ end }}{{ if .Present }}
-**Present:** {{ joinStrings .Present ", " }}
+{{ if or .Model.Schema.Issue .DecidedOn .Present }}
+{{ if .Model.Schema.Issue }}**Issue:** {{ .Model.Schema.Issue }}{{ end }}
+{{ if .DecidedOn }}**Date:** {{ .DecidedOn }}{{ end }}
+{{ if .Present }}**Present:** {{ joinStrings .Present ", " }}{{ end }}
 {{ end }}
-{{ if .Final }}## Decision
+{{- if .Final }}
+## Decision
 
-**Option:** [{{ .Final.Title }}](#{{ anchor .Final.Title }})
-{{ if .Final.Rationale }}
-**Rationale:** {{ .Final.Rationale }}
+> **{{ .Final.Title }}**
+{{ if .Final.Rationale }}>
+> {{ .Final.Rationale }}
 {{ end }}
-{{ end }}{{ if .Requirements }}## Requirements
+{{- end }}
+{{- if .Requirements }}
 
-| Requirement | Hard | Checked |
+## Requirements
+
+| Requirement | Type | Active |
 |---|---|---|
-{{ range .Requirements }}| {{ requirementDesc $.Model .ID }} | {{ yesNo .IsHard }} | {{ yesNo .Checked }} |
+{{ range .Requirements -}}
+| {{ requirementDesc $.Model .ID }} | {{ if .IsHard }}hard{{ else }}soft{{ end }} | {{ if .Checked }}✅{{ else }}—{{ end }} |
 {{ end }}
-{{ end }}{{ if .Items }}## Items
+{{- end }}
+{{- if .Items }}
+
+## Items
 
 | Item | Answer / Value |
 |---|---|
-{{ range .Items }}| {{ itemDesc $.Model .ID }} | {{ itemValue $.Model . }} |
+{{ range .Items -}}
+| {{ itemDesc $.Model .ID }} | {{ itemValue $.Model . }} |
 {{ end }}
-{{ end }}{{ if .Options }}## Design Options
+{{- end }}
+{{- if .Options }}
+
+## Design Options
 {{ range .Options }}
 ### {{ optionTitle $.Model .ID }}
-
+{{ if optionDesc $.Model .ID }}
 {{ optionDesc $.Model .ID }}
-
-**Status:** {{ .Status }}
-
-**Requirements met:** {{ .Meets.Hard.Met }}/{{ .Meets.Hard.Of }} hard, {{ .Meets.Soft.Met }}/{{ .Meets.Soft.Of }} soft
+{{ end }}
+{{ statusBadge .Status }} · {{ .Meets.Hard.Met }}/{{ .Meets.Hard.Of }} hard · {{ .Meets.Soft.Met }}/{{ .Meets.Soft.Of }} soft
 {{ if .FailedRequirements }}
-**Failed requirements:** {{ joinFailedReqs $.Model .FailedRequirements }}
-{{ end }}{{ if .FiredBlocks }}
-**Blocked:** {{ joinStrings .FiredBlocks "; " }}
-{{ end }}{{ if .Effects }}
-**Effects:**
-{{ range .Effects -}}
-- {{ if .Category }}[{{ .Category }}] {{ end }}{{ .Text }} ({{ .Kind }})
-{{ end }}{{ end }}{{ if optionPros $.Model .ID }}
-**Pros:**
+❌ **Failed:** {{ joinFailedReqs $.Model .FailedRequirements }}
+{{ end -}}
+{{ if .FiredBlocks }}
+⚠️ **Blocked:** {{ joinStrings .FiredBlocks "; " }}
+{{ end -}}
+{{ if optionPros $.Model .ID }}
+**Pros**
 {{ range optionPros $.Model .ID -}}
 - {{ . }}
-{{ end }}{{ end }}{{ if optionCons $.Model .ID }}
-**Cons:**
+{{ end }}
+{{- end -}}
+{{ if optionCons $.Model .ID }}
+**Cons**
 {{ range optionCons $.Model .ID -}}
 - {{ . }}
-{{ end }}{{ end }}
-{{ end }}{{ end }}
+{{ end }}
+{{- end -}}
+{{ if .Effects }}
+**Effects**
+{{ range .Effects -}}
+- {{ if .Category }}[{{ .Category }}] {{ end }}{{ .Text }} _({{ .Kind }})_
+{{ end }}
+{{- end -}}
+{{ end }}
+{{- end }}
+{{- if .History }}
+
+## History
+{{ range .History }}
+- **{{ .DecidedOn }}** — {{ .Title }}{{ if .Rationale }}: {{ .Rationale }}{{ end }}
+{{- end }}
+{{ end }}

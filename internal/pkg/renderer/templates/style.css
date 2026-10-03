@@ -693,6 +693,52 @@ textarea::placeholder {
   flex-shrink: 0;
 }
 
+/* Export dropdown */
+.export-dropdown {
+  position: relative;
+}
+.export-chevron {
+  width: 12px;
+  height: 12px;
+  margin-left: -0.1rem;
+  opacity: 0.6;
+}
+.export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  min-width: 100px;
+  z-index: 100;
+  overflow: hidden;
+}
+.export-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.45rem 0.75rem;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-family: var(--mono);
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+.export-option:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.export-option + .export-option {
+  border-top: 1px solid var(--border);
+}
+
 /* Theme toggle */
 .theme-toggle {
   background: var(--surface);
@@ -1011,5 +1057,90 @@ textarea::placeholder {
   }
   .pros-cons {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Print / PDF */
+@media print {
+  body {
+    padding: 0;
+    font-size: 11pt;
+    max-width: none;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Hide interactive elements */
+  .header-actions,
+  .theme-toggle,
+  .pick-area,
+  .modal-overlay,
+  .toast,
+  .page-footer,
+  .export-dropdown,
+  #print-btn {
+    display: none !important;
+  }
+
+  /* Expand all sections */
+  details {
+    display: block !important;
+  }
+  details > summary {
+    list-style: none;
+    pointer-events: none;
+  }
+  details > summary .chevron {
+    transform: rotate(90deg);
+  }
+
+  /* Remove decorative styles */
+  .section {
+    border-left: 2px solid #999;
+    page-break-inside: avoid;
+  }
+
+  /* Show all option detail panels for print */
+  .options-split {
+    flex-direction: column;
+  }
+  .options-list {
+    display: none;
+  }
+  .option-detail-panel {
+    display: block !important;
+    opacity: 1 !important;
+    border: 1px solid #ccc;
+    margin-bottom: 0.75rem;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  /* Decision section */
+  .decision-made {
+    border-color: #999;
+    box-shadow: none;
+  }
+  .decision-undo {
+    display: none;
+  }
+
+  /* Flatten colors */
+  .option-status {
+    border: 1px solid #999;
+    background: none;
+  }
+
+  /* Clean links */
+  a {
+    color: #000;
+    text-decoration: underline;
+  }
+
+  /* Avoid page breaks inside cards */
+  .item,
+  .req,
+  .pros-cons {
+    page-break-inside: avoid;
   }
 }

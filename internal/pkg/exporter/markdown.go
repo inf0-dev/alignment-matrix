@@ -26,6 +26,7 @@ var funcMap = template.FuncMap{
 	"joinFailedReqs":  joinFailedReqs,
 	"itemValue":       itemValue,
 	"anchor":          anchor,
+	"statusBadge":     statusBadge,
 	"deref":           func(s *string) string { return *s },
 	"string":          func(k v1.Kind) string { return string(k) },
 }
@@ -158,4 +159,19 @@ func yesNo(v bool) string {
 		return "Yes"
 	}
 	return "No"
+}
+
+func statusBadge(s v1.OptionStatus) string {
+	switch s {
+	case v1.StatusPicked:
+		return "✅ **Picked**"
+	case v1.StatusPossible:
+		return "🟢 Possible"
+	case v1.StatusEliminated:
+		return "❌ Eliminated"
+	case v1.StatusBlocked:
+		return "⚠️ Blocked"
+	default:
+		return string(s)
+	}
 }

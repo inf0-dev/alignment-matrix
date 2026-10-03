@@ -16,6 +16,7 @@ import (
 
 	v1 "github.com/inf0-dev/alma/api/v1"
 	"github.com/inf0-dev/alma/internal/pkg/engine"
+	"github.com/inf0-dev/alma/internal/pkg/exporter"
 	"github.com/inf0-dev/alma/internal/pkg/parser"
 	"github.com/inf0-dev/alma/internal/pkg/renderer"
 	"go.yaml.in/yaml/v4"
@@ -170,16 +171,47 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := yaml.Marshal(rec)
-	if err != nil {
-		http.Error(w, "failed to marshal record", http.StatusInternalServerError)
-		return
+	format := r.URL.Query().Get("format")
+	if format == "" {
+		format = "yaml"
 	}
 
-	filename := slugify(rec.Model.Schema.Title) + ".yaml"
-	w.Header().Set("Content-Type", "application/x-yaml")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
-	_, _ = w.Write(data)
+	slug := slugify(rec.Model.Schema.Title)
+
+	switch format {
+	case "yaml":
+		data, err := yaml.Marshal(rec)
+		if err != nil {
+			http.Error(w, "failed to marshal record", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/x-yaml")
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.yaml"`, slug))
+		_, _ = w.Write(data)
+
+	case "json":
+		data, err := json.MarshalIndent(rec, "", "  ")
+		if err != nil {
+			http.Error(w, "failed to marshal record", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.json"`, slug))
+		_, _ = w.Write(data)
+
+	case "md":
+		data, err := exporter.Markdown(rec)
+		if err != nil {
+			http.Error(w, "failed to render markdown", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.md"`, slug))
+		_, _ = w.Write([]byte(data))
+
+	default:
+		http.Error(w, "unsupported format: "+format, http.StatusBadRequest)
+	}
 }
 
 type statePayload struct {
